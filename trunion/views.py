@@ -37,10 +37,12 @@
 """
 from cornice import Service
 import crypto
+import cStringIO
 
 sign = Service(name='sign', path='/1.0/sign', description="Receipt signer")
 
 #@sign.post(validator=valid_receipt)
+@sign.post()
 def sign_receipt(request):
     # validators already confirmed the payload is valid JSON
     receipt = request.json_body
@@ -57,9 +59,7 @@ def sign_receipt(request):
     # input receipt, signed with our software key.
 
     # Sign the receipt with our current ephemeral key
-    signed_receipt = crypto.sign_jwt(aReceipt)
+    signed_receipt = crypto.sign_jwt(receipt)
     result.write(signed_receipt)
 
     return result.getvalue()
-
-crypto.init()

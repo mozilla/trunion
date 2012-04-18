@@ -39,32 +39,23 @@
 # Wrapper for crypto functions
 #
 
-from pyramid.threadlocal import get_current_registry
-
 import jwt
 import logging
 import M2Crypto
 import time
+import json
 
 class KeyStore(object):
 
-    def __init__(self, key=None, cert=None, interval=60):
-        from pprint import pprint
-        pprint(get_current_registry())
+    def __init__(self, key, cert, interval=60):
+        self.key_file = key
+        self.cert_file = cert
 
-        if key is None:
-            self.key_file = get_current_registry()['trunion']['keyfile']
-        else:
-            self.key_file = key
-
-        if cert is None:
-            self.cert_file = get_current_registry()['trunion']['certfile']
-        else:
-            self.cert_file = cert
         self.setKey(self.key_file)
         # FIXME Verify that it's actually a paired set of keys
         self.load_cert(self.cert_file)
         self.kid = json.loads(jwt.decode(self.certificate, verify=False))['key'][0]['kid']
+
         self.last_stat = time.time()
         self.poll_interval = interval
 
@@ -86,14 +77,18 @@ class KeyStore(object):
         return jwt.decode(payload, self)
 
     def setKey(self, name):
-        self.key = M2Crypto.EVP.load_key(name)
-        self.load_cert(name)
+        try:
+            self.key = M2Crypto.EVP.load_key(name)
+        except M2Crypto.BIO.BIOError, e:
+            logging.error("Failed to load key: %s" % e)
+            raise
 
     def load_cert(self, name):
         # FIXME  Need to verify that the pubkey in the cert does match the
         # signing key by doing a quick signature check
         try:
-            self.certificate = open(name, "r").read()
+            with open(name, 'r') as f:
+                self.certificate = f.read()
             try:
                 self.kid = json.loads(jwt.decode(self.certificate,
                                                  verify=False))['key'][0]['kid']
@@ -102,7 +97,7 @@ class KeyStore(object):
                 self.kid = json.loads(self.certificate)['jwk'][0]['kid']
         except Exception, e:
             logging.error("Unable to load certificate for key '%s': cannot find '%s.crt' file in working directory" % (name, name))
-            raise IOError("Unable to load certificate for key '%s'" % name)
+            raise #IOError("Unable to load certificate for key '%s'" % name)
 
 
 KEYSTORE = None

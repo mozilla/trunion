@@ -1,6 +1,7 @@
 setup.py
 trunion/__init__.py
 trunion/crypto.py
+trunion/key_certify.py
 trunion/run.py
 trunion/validators.py
 trunion/views.py

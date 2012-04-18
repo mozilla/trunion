@@ -39,12 +39,10 @@
 from pyramid.config import Configurator
 from mozsvc.config import get_configurator
 
+import crypto
 
 def main(global_config, **settings):
     config = get_configurator(global_config, **settings)
-
-    from pprint import pprint
-    pprint(config.registry)
 
     # authorization
     #config.include('pyramid_ipauth')
@@ -52,4 +50,8 @@ def main(global_config, **settings):
     config.include("cornice")
 
     config.scan("trunion.views")
+
+    crypto.init(key=config.registry.settings['trunion.keyfile'],
+                cert=config.registry.settings['trunion.certfile'])
+
     return config.make_wsgi_app()

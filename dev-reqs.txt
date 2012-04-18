@@ -16,4 +16,4 @@ zope.event == 3.5.1
 zope.interface == 3.8
 pyramid_who == 0.2
 repoze.who == 2.0
-pyjwt == 0.1
+-e git://github.com/michaelrhanson/pyjwt.git#egg=jwt
