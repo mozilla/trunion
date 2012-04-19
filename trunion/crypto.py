@@ -45,6 +45,7 @@ import M2Crypto
 import time
 import json
 
+
 class KeyStore(object):
 
     def __init__(self, key, cert, interval=60):
@@ -59,8 +60,8 @@ class KeyStore(object):
         self.last_stat = time.time()
         self.poll_interval = interval
 
-    def sign(self, data, hash):
-        self.key.reset_context(hash)
+    def sign(self, data, hash_alg):
+        self.key.reset_context(hash_alg)
         self.key.sign_init()
         self.key.sign_update(data)
         return self.key.sign_final()
@@ -90,31 +91,36 @@ class KeyStore(object):
             with open(name, 'r') as f:
                 self.certificate = f.read()
             try:
-                self.kid = json.loads(jwt.decode(self.certificate,
-                                                 verify=False))['key'][0]['kid']
+                self.cert_data = json.loads(jwt.decode(self.certificate,
+                                                       verify=False))['key'][0]
             except jwt.DecodeError:
                 # This may raise an exception but that's ok
                 self.kid = json.loads(self.certificate)['jwk'][0]['kid']
-        except Exception, e:
+        except Exception:
             logging.error("Unable to load certificate for key '%s': cannot find '%s.crt' file in working directory" % (name, name))
-            raise #IOError("Unable to load certificate for key '%s'" % name)
+            raise  # IOError("Unable to load certificate for key '%s'" % name)
 
 
 KEYSTORE = None
+
 
 def init(*args, **kwargs):
     global KEYSTORE
     if KEYSTORE is None:
         KEYSTORE = KeyStore(*args, **kwargs)
 
+
 def sign(input_data):
-	return KEYSTORE.sign(input_data, "sha256")
+    return KEYSTORE.sign(input_data, "sha256")
+
 
 def sign_jwt(input_data):
-	return KEYSTORE.encode_jwt(input_data)
+    return KEYSTORE.encode_jwt(input_data)
+
 
 def verify_jwt(input_data):
-	return KEYSTORE.decode_jwt(input_data)
+    return KEYSTORE.decode_jwt(input_data)
+
 
 def get_certificate():
-	return KEYSTORE.certificate
+    return KEYSTORE.certificate

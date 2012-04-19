@@ -36,10 +36,10 @@
 
 """Main entry point
 """
-from pyramid.config import Configurator
 from mozsvc.config import get_configurator
 
 import crypto
+
 
 def main(global_config, **settings):
     config = get_configurator(global_config, **settings)

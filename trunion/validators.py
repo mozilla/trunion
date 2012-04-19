@@ -34,52 +34,59 @@
 #
 # ***** END LICENSE BLOCK *****
 
-import re
+from pyramid.httpexceptions import HTTPBadRequest, HTTPConflict
 
-EMAIL_REGEX = re.compile()
-PROD_URL_REGEX = re.compile()
+import re
+import time
+
+import crypto
+
+# From https://github.com/mozilla/browserid/blob/dev/lib/sanitize.js
+EMAIL_REGEX = re.compile("^[-\w.!#$%&'*+/=?\^`{|}~]+@[-a-z\d_]+(\.[-a-z\d_]+)+$",
+                         re.I)
+PROD_URL_REGEX = re.compile("^https?:\/\/[-a-z\d_]+(\.[-a-z\d_]+)*(:\d+)?$", re.I)
 
 def valid_receipt(request):
     try:
         receipt = request.json_body
     except ValueError:
         request.errors.add('body', 'receipt', 'Invalid JSON')
-        return
+        raise HTTPBadRequest()
 
     now = long(time.time())
 
-    for key in ('detail', 'verify', 'user', 'product',)
-    if 'typ' not in receipt: # FIXME
-        pass
+    for key in ('detail', 'verify', 'user', 'product',):
+        if key not in receipt:
+            request.errors.add('body', 'receipt', 'Invalid JSON')
+            raise HTTPBadRequest()
 
     # Verify the time windows
-    # XXX  Need to return a 409 here!
-    if receipt['iss'] != reg['signing-cert']['issuer'] # FIXME
+    if (receipt['iss'] != reg['signing-cert']['issuer']
         or receipt['nbf'] > now
         or receipt['iat'] > now
-        or receipt['iat'] < reg['current-key']['']:
-        pass
+        or receipt['iat'] < reg['current-key']['']):
+        raise HTTPConflict()
 
     if not valid_user(receipt['user']):
         request.errors.add('body', 'receipt', 'Invalid user struct')
-        return
+        raise HTTPBadRequest()
 
     if not valid_product(receipt['product']):
         request.errors.add('body', 'receipt', 'Invalid product struct')
-        return
+        raise HTTPBadRequest()
 
 def valid_user(obj):
-    if type(obj) != dict
+    if (type(obj) != dict
         or 'type' not in obj
         or 'value' not in obj
         or obj['type'] != 'email'
-        or not EMAIL_REGEX.match(obj['value']):
-            return ANGRY
+        or not EMAIL_REGEX.match(obj['value'])):
+            return False
 
 def valid_product(obj):
-    if type(obj) != dict
+    if (type(obj) != dict
         or 'url' not in obj
         or 'storedata' not in obj
         or not PROD_URL_REGEX.match(obj['url'])
-        or type(obj['storedata']) != int:
-            return ANGRY
+        or type(obj['storedata']) != int):
+            return False
