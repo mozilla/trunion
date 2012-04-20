@@ -52,10 +52,9 @@ class KeyStore(object):
         self.key_file = key
         self.cert_file = cert
 
-        self.setKey(self.key_file)
         # FIXME Verify that it's actually a paired set of keys
+        self.setKey(self.key_file)
         self.load_cert(self.cert_file)
-        self.kid = json.loads(jwt.decode(self.certificate, verify=False))['key'][0]['kid']
 
         self.last_stat = time.time()
         self.poll_interval = interval
@@ -95,7 +94,7 @@ class KeyStore(object):
                                                        verify=False))['key'][0]
             except jwt.DecodeError:
                 # This may raise an exception but that's ok
-                self.kid = json.loads(self.certificate)['jwk'][0]['kid']
+                self.cert_data = json.loads(self.certificate)['jwk'][0]
         except Exception:
             logging.error("Unable to load certificate for key '%s': cannot find '%s.crt' file in working directory" % (name, name))
             raise  # IOError("Unable to load certificate for key '%s'" % name)

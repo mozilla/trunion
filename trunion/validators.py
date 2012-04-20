@@ -61,10 +61,13 @@ def valid_receipt(request):
             raise HTTPBadRequest()
 
     # Verify the time windows
-    if (receipt['iss'] != reg['signing-cert']['issuer']
+    #
+    # Note: these checks should really reflect a window of opportunity taking
+    #       clock drift and processing queue length/times into account
+    if (receipt['iss'] != crypto.KEYSTORE.cert_data['iss']
         or receipt['nbf'] > now
         or receipt['iat'] > now
-        or receipt['iat'] < reg['current-key']['']):
+        or receipt['iat'] < crypto.KEYSTORE.cert_data['iat']):
         raise HTTPConflict()
 
     if not valid_user(receipt['user']):
