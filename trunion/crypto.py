@@ -91,7 +91,7 @@ class KeyStore(object):
                 self.certificate = f.read()
             try:
                 self.cert_data = json.loads(jwt.decode(self.certificate,
-                                                       verify=False))['key'][0]
+                                                       verify=False))
             except jwt.DecodeError:
                 # This may raise an exception but that's ok
                 self.cert_data = json.loads(self.certificate)['jwk'][0]

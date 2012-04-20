@@ -36,13 +36,13 @@
 """ Cornice services.
 """
 from cornice import Service
-import crypto
 import cStringIO
+import crypto
+from validators import valid_receipt
 
 sign = Service(name='sign', path='/1.0/sign', description="Receipt signer")
 
-#@sign.post(validator=valid_receipt)
-@sign.post()
+@sign.post(validator=valid_receipt)
 def sign_receipt(request):
     # validators already confirmed the payload is valid JSON
     receipt = request.json_body

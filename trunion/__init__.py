@@ -41,9 +41,7 @@ from mozsvc.config import get_configurator
 import crypto
 
 
-def main(global_config, **settings):
-    config = get_configurator(global_config, **settings)
-
+def includeme(config):
     # authorization
     #config.include('pyramid_ipauth')
 
@@ -54,4 +52,9 @@ def main(global_config, **settings):
     crypto.init(key=config.registry.settings['trunion.keyfile'],
                 cert=config.registry.settings['trunion.certfile'])
 
+
+
+def main(global_config, **settings):
+    config = get_configurator(global_config, **settings)
+    config.include(includeme)
     return config.make_wsgi_app()
