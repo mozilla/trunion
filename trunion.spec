@@ -1,4 +1,5 @@
-%define name python26-trunion
+%define pyver 26
+%define name python%{pyver}-trunion
 %define pythonname trunion
 %define version 1.0
 %define release 1
@@ -14,7 +15,9 @@ BuildRoot: %{_tmppath}/%{pythonname}-%{version}-%{release}-buildroot
 Prefix: %{_prefix}
 BuildArch: noarch
 Vendor: Services team <services-dev@mozilla.org>
-Requires: python26 python26-setuptools python26-webob python26-paste python26-pastedeploy python26-sqlalchemy python26-simplejson 
+Requires: python%{pyver} python%{pyver}-setuptools python%{pyver}-webob python%{pyver}-paste
+Requires: python%{pyver}-pastedeploy python%{pyver}-pyramid python%{pyver}-simplejson
+Requires: python%{pyver}-m2crypto python%{pyver}-cef
 
 Url: https://github.com/rtilder/trunion
 
