@@ -13,3 +13,4 @@ trunion.egg-info/not-zip-safe
 trunion.egg-info/paster_plugins.txt
 trunion.egg-info/requires.txt
 trunion.egg-info/top_level.txt
+trunion/tests/__init__.py
