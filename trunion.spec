@@ -1,7 +1,7 @@
 %define pyver 26
 %define name python%{pyver}-trunion
 %define pythonname trunion
-%define version 1.0
+%define version 0.1
 %define release 1
 
 Summary: Receipt Signing App
