@@ -52,6 +52,14 @@ def includeme(config):
     crypto.init(key=config.registry.settings['trunion.keyfile'],
                 cert=config.registry.settings['trunion.certfile'])
 
+    issuers = config.registry.settings.get('trunion.permitted_issuers', '')
+    issuers = issuers.split(',')
+    iss = []
+    for issuer in issuers:
+        iss.append(issuer.strip())
+    if len(iss) < 1:
+        raise Exception("No issuers provided in the config file!")
+    config.registry.settings['trunion.permitted_issuers'] = iss
 
 
 def main(global_config, **settings):
