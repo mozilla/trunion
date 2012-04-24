@@ -1,3 +1,7 @@
+#
+# Taken from  https://github.com/progrium/pyjwt via Mike Hanson's fork at
+# https://github.com/michaelrhanson/pyjwt/
+#
 """ JSON Web Token implementation
 
 Minimum implementation based on this spec:
