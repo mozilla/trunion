@@ -15,9 +15,9 @@ BuildRoot: %{_tmppath}/%{pythonname}-%{version}-%{release}-buildroot
 Prefix: %{_prefix}
 BuildArch: noarch
 Vendor: Services team <services-dev@mozilla.org>
-Requires: python%{pyver} python%{pyver}-setuptools python%{pyver}-webob python%{pyver}-paste
-Requires: python%{pyver}-pastedeploy python%{pyver}-pyramid python%{pyver}-simplejson
-Requires: python%{pyver}-m2crypto python%{pyver}-cef
+Requires: python%{pyver} python%{pyver}-setuptools python%{pyver}-webob
+Requires: python%{pyver}-paste python%{pyver}-pastedeploy python%{pyver}-pyramid
+Requires:  python%{pyver}-simplejson python%{pyver}-m2crypto python%{pyver}-cef
 
 Url: https://github.com/rtilder/trunion
 

@@ -10,6 +10,8 @@ BUILDAPP = $(BIN)/buildapp
 BUILDRPMS = $(BIN)/buildrpms
 PYPI = http://pypi.python.org/simple
 PYPIOPTIONS = -i $(PYPI)
+PYPI2 = http://pypi.python.org/packages
+BUILD_TMP = /tmp/trunion-build.${USER}
 DOTCHANNEL := $(wildcard .channel)
 ifeq ($(strip $(DOTCHANNEL)),)
 	CHANNEL = dev
@@ -21,6 +23,7 @@ endif
 INSTALL = $(BIN)/pip install
 PIP_CACHE = /tmp/pip_cache
 INSTALLOPTIONS = --download-cache $(PIP_CACHE)  -U -i $(PYPI)
+RPMDIR= $(CURDIR)/rpms
 
 ifdef PYPIEXTRAS
 	PYPIOPTIONS += -e $(PYPIEXTRAS)
@@ -60,7 +63,11 @@ test:
 
 build_rpms:
 	rm -rf rpms/
+	mkdir -p rpms ${BUILD_TMP}
 	$(BUILDRPMS) -c $(RPM_CHANNEL) $(DEPS)
+	cd ${BUILD_TMP} && wget $(PYPI2)/source/M/M2Crypto/M2Crypto-0.21.1.tar.gz#md5=f93d8462ff7646397a9f77a2fe602d17
+	cd ${BUILD_TMP} && tar -xzvf M2Crypto-0.21.1.tar.gz && cd M2Crypto-0.21.1 && sed -i -e 's/opensslconf\./opensslconf-x86_64\./' SWIG/_ec.i && sed -i -e 's/opensslconf\./opensslconf-x86_64\./' SWIG/_evp.i && SWIG_FEATURES=-cpperraswarn $(PYTHON) setup.py --command-packages=pypi2rpm.command bdist_rpm2 --binary-only --dist-dir=$(RPMDIR) --name=python26-m2crypto
+	rm -rf ${BUILD_TMP}/M2Crypto*
 
 mach: build build_rpms
 	mach clean

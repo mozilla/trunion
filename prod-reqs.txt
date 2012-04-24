@@ -11,4 +11,4 @@ zope.component == 3.11
 zope.deprecation == 3.5
 zope.event == 3.5.1
 zope.interface == 3.8
--e git://github.com/michaelrhanson/pyjwt.git#egg=jwt
+mozsvc == 0.3
