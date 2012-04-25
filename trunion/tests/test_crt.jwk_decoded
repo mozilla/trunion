@@ -1,1 +1,10 @@
-{"key": [{"alg": "RSA", "mod": "AAABAQDBRx7EEpiFiO_4tyVoqMckaoshTjqHGEvAi32x_p3RKE8qUnQFIRtoFfQs23gNY0YlaUD3pO3vKGPW95oufqj5Mba5DMMSO5hW31Mvu6G7Y7EV6trJJDu62u12MQR1RZxx-6REDtsi_3YnA4lX5GjhQNiqPK0QX_Bc7SzTjOOKzpRidrKV4qALea0WxKWnGNMlcuwQWMnwbGpdjLuyo5CwlJyqD8r-gK5Pz8dWmeyCFF29iZmwWHh_wkuI0L9duLWu1hBqmQefPdQj0E6cc52TarBr-E2y7vBJZ-I8lLeBAPXomVY4aRBffhNct3rGBYb2WjcUAp9q-nSukkDBOZ45", "exp": "AAAAAwEAAQ", "kid": "appstore.mozilla.com-2012-04-18"}], "iss": "appstore.mozilla.com-beta-test", "typ": "certified-key", "exp": 1334853408, "iat": 1334767008, "price_limit": 50, "nbf": 1334767008}
+{"exp": 1335401279,
+ "iat": 1335314879,
+ "iss": "https://marketplace-dev-cdn.allizom.org/public_keys/test_root_pub.jwk",
+ "jwk": [{"alg": "RSA",
+           "exp": "AQAB",
+           "kid": "appstore.mozilla.com-2012-04-25",
+           "mod": "AMFHHsQSmIWI7_i3JWioxyRqiyFOOocYS8CLfbH-ndEoTypSdAUhG2gV9CzbeA1jRiVpQPek7e8oY9b3mi5-qPkxtrkMwxI7mFbfUy-7obtjsRXq2skkO7ra7XYxBHVFnHH7pEQO2yL_dicDiVfkaOFA2Ko8rRBf8FztLNOM44rOlGJ2spXioAt5rRbEpacY0yVy7BBYyfBsal2Mu7KjkLCUnKoPyv6Ark_Px1aZ7IIUXb2JmbBYeH_CS4jQv124ta7WEGqZB5891CPQTpxznZNqsGv4TbLu8Eln4jyUt4EA9eiZVjhpEF9-E1y3esYFhvZaNxQCn2r6dK6SQME5njk"}],
+ "nbf": 1335314879,
+ "price_limit": 50,
+ "typ": "certified-key"}

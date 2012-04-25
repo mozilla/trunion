@@ -86,12 +86,12 @@ def valid_receipt(request):
 
     try:
         valid_user(receipt['user'])
-    except:
+    except Exception, e:
         raise
 
     try:
         valid_product(receipt['product'])
-    except:
+    except Exception, e:
         raise
 
 
@@ -102,9 +102,9 @@ def valid_user(obj):
         raise HTTPBadRequest('Invalid user struct: no type defined')
     if 'value' not in obj:
         raise HTTPBadRequest('Invalid user struct: invalid value')
-    if obj['type'] != 'email':
+    if obj['type'] not in ('email', 'directed-identifier'):
         raise HTTPBadRequest('Invalid user struct: unknown type')
-    if not EMAIL_REGEX.match(obj['value']):
+    if obj['type'] == 'email' and not EMAIL_REGEX.match(obj['value']):
         raise HTTPBadRequest('Invalid user struct: invalid value')
     return True
 
