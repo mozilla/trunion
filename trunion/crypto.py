@@ -60,10 +60,7 @@ class KeyStore(object):
         self.poll_interval = interval
 
     def sign(self, data, hash_alg):
-        self.key.reset_context(hash_alg)
-        self.key.sign_init()
-        self.key.sign_update(data)
-        return self.key.sign_final()
+        return self.key.get_rsa().sign(data, hash_alg)
 
     def verify(self, digest, signature, alg):
         self.key.verify_init()
@@ -71,7 +68,8 @@ class KeyStore(object):
         return self.key.verify_final(signature)
 
     def encode_jwt(self, payload):
-        return jwt.encode(payload, self, u'RS256')
+        header=dict(alg=u'RS256', typ='JWT', jku=self.cert_data['iss'])
+        return jwt.encode(payload, self, header=header)
 
     def decode_jwt(self, payload):
         return jwt.decode(payload, self)
@@ -90,8 +88,7 @@ class KeyStore(object):
             with open(name, 'r') as f:
                 self.certificate = f.read()
             try:
-                self.cert_data = json.loads(jwt.decode(self.certificate,
-                                                       verify=False))
+                self.cert_data = jwt.decode(self.certificate, verify=False)
             except jwt.DecodeError:
                 # This may raise an exception but that's ok
                 self.cert_data = json.loads(self.certificate)['jwk'][0]

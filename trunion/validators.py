@@ -48,21 +48,19 @@ PROD_URL_REGEX = re.compile("^https?:\/\/[-a-z\d_]+(\.[-a-z\d_]+)*(:\d+)?$", re.
 
 # TODO
 #    Don't permit other than the required fields to be safe:
-#      typ, iss, nbf, iss, iat, detail, verify, product(url, storedata),
-#       user(type, value)
+#      typ, nbf, iss, iat, detail, verify, product(url, storedata),
+#      user(type, value)
 
 def valid_receipt(request):
     try:
         receipt = request.json_body
     except ValueError:
-        #request.errors.add('body', 'receipt', 'Invalid JSON')
         raise HTTPBadRequest('Invalid JSON')
 
     now = long(time.time())
 
     for key in ('detail', 'verify', 'user', 'product', 'iss', 'iat', 'nbf'):
         if key not in receipt:
-            #request.errors.add('body', 'receipt', 'Invalid JSON')
             raise HTTPBadRequest('missing %s' % key)
 
     # Verify the time windows
@@ -73,7 +71,7 @@ def valid_receipt(request):
     # Also, if we aren't going to revoke then the checks against signing['exp']
     # should definitely include a window
     signing = crypto.KEYSTORE.cert_data
-    if receipt['iss'] != signing['iss']:
+    if receipt['iss'] not in request.registry.settings['trunion.permitted_issuers']:
         raise HTTPConflict('Bad issuer')
     if receipt['nbf'] < signing['iat']:
         raise HTTPConflict('nbf < iat')
@@ -89,13 +87,11 @@ def valid_receipt(request):
     try:
         valid_user(receipt['user'])
     except:
-        #request.errors.add('body', 'receipt', 'Invalid user struct')
         raise
 
     try:
         valid_product(receipt['product'])
     except:
-        #request.errors.add('body', 'receipt', 'Invalid product struct')
         raise
 
 
@@ -122,6 +118,6 @@ def valid_product(obj):
         raise HTTPBadRequest('Invalid product struct: no storedata')
     if not PROD_URL_REGEX.match(obj['url']):
         raise HTTPBadRequest("Invalid product struct: URL doesn't look like HTTPS")
-    if type(obj['storedata']) not in (int, long):
-        raise HTTPBadRequest('Invalid product struct: storedata not an integer')
+    if len(obj['storedata']) < 1:
+        raise HTTPBadRequest('Invalid product struct: storedata appears to be empty')
     return True

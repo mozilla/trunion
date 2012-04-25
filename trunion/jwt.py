@@ -1,7 +1,3 @@
-#
-# Taken from  https://github.com/progrium/pyjwt via Mike Hanson's fork at
-# https://github.com/michaelrhanson/pyjwt/
-#
 """ JSON Web Token implementation
 
 Minimum implementation based on this spec:
@@ -23,6 +19,7 @@ __all__ = ['encode', 'decode', 'rsa_load', 'check', 'DecodeError']
 log = logging.getLogger(__name__)
 
 class DecodeError(Exception): pass
+class EncodeError(Exception): pass
 
 signing_methods = {
     'HS256': lambda msg, key: hmac.new(unicode(key).encode('utf8'), msg, hashlib.sha256).digest(),
@@ -57,14 +54,20 @@ def header(jwt):
     except (ValueError, TypeError):
         raise DecodeError("Invalid header encoding")
 
-def encode(payload, key, algorithm='HS256'):
+def encode(payload, key, algorithm='HS256', header=None):
     segments = []
-    header = {"typ": "JWT", "alg": algorithm}
+    if header is None:
+        header = {"typ": "JWT", "alg": algorithm}
+    else:
+        if not header.has_key('typ'):
+            raise EncodeError('Missing "typ" header in custom headers')
+        if not header.has_key('alg'):
+            header['alg'] = algorithm
     segments.append(base64url_encode(json.dumps(header)))
     segments.append(base64url_encode(json.dumps(payload)))
     signing_input = '.'.join(segments)
     try:
-        signature = signing_methods[algorithm](signing_input, key)
+        signature = signing_methods[header['alg']](signing_input, key)
     except KeyError:
         raise NotImplementedError("Algorithm not supported")
     segments.append(base64url_encode(signature))

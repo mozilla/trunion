@@ -2,15 +2,16 @@
  "typ": "purchase-receipt",
  "product": {
    "url": "https://grumpybadgers.com",
-   "storedata": "5169314356"
+   "storedata": "ARTFUL 5169314356"
  },
  "user": {
    "type": "email",
    "value": "pseud-123gBm51jc56s@idprovider.com"
  },
- "iss": "https://appstore.com",
- "nbf": 131360185,
- "iat": 131360188,
+ "iss": "https://bananaphone.com",
+ "nbf": 1335372745,
+ "iat": 1335372745,
+ "exp": 1335459145,
  "detail": "https://appstore.com/receipt/5169314356",
  "verify": "https://appstore.com/verify/5169314356"
 }

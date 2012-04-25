@@ -36,7 +36,6 @@
 """ Cornice services.
 """
 from cornice import Service
-import cStringIO
 import crypto
 from validators import valid_receipt
 
@@ -49,17 +48,12 @@ def sign_receipt(request):
 
     # Part one of the certified receipt is
     # our ephemeral key's certificate
-    result = cStringIO.StringIO()
-    result.write(crypto.get_certificate())
-
-    # Delimiter:
-    result.write("~")
+    result = [crypto.get_certificate()]
 
     # Part two of the certified_receipt is the
     # input receipt, signed with our software key.
 
     # Sign the receipt with our current ephemeral key
-    signed_receipt = crypto.sign_jwt(receipt)
-    result.write(signed_receipt)
+    result.append(crypto.sign_jwt(receipt))
 
-    return result.getvalue()
+    return {'receipt': '~'.join(result)}
