@@ -30,6 +30,8 @@ setup(name='trunion',
     entry_points = """\
     [paste.app_factory]
     main = trunion:main
+    [console_scripts]
+    check_keys = trunion.scripts:check_keys
     """,
     paster_plugins=['pyramid'],
 )
