@@ -12,3 +12,4 @@ zope.deprecation == 3.5
 zope.event == 3.5.1
 zope.interface == 3.8
 mozsvc == 0.3
+gunicorn == 0.14.2
