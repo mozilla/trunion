@@ -40,6 +40,20 @@ for an 'application' variable
 import os
 from logging.config import fileConfig
 from ConfigParser import NoSectionError
+import site
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+if os.path.splitext(os.path.basename(__file__))[0] == 'cProfile':
+    if os.environ.get('TRUNION_PATH'):
+        ROOT = os.environ['TRUNION_PATH']
+    else:
+        print 'When using cProfile you must set $TRUNION_PATH'
+        sys.exit(2)
+
+path = lambda *a: os.path.join(ROOT, *a)
+
+site.addsitedir(path('vendor'))
+site.addsitedir(path('vendor/lib/python'))
 
 # setting up the egg cache to a place where apache can write
 os.environ['PYTHON_EGG_CACHE'] = '/tmp/python-eggs'
