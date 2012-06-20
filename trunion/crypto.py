@@ -44,7 +44,8 @@ import logging
 import M2Crypto
 import time
 import json
-
+import os
+import random
 
 class KeyStore(object):
 
@@ -57,9 +58,11 @@ class KeyStore(object):
         self.load_cert(self.cert_file)
 
         self.last_stat = time.time()
-        self.poll_interval = interval
+        # Some slight fuzzing of poll interval at atoll's request
+        self.poll_interval = interval + random.randint(0, int(interval * 0.25))
 
     def sign(self, data, hash_alg):
+        self.updateKey()
         return self.key.get_rsa().sign(data, hash_alg)
 
     def verify(self, digest, signature, alg):
@@ -73,6 +76,46 @@ class KeyStore(object):
 
     def decode_jwt(self, payload):
         return jwt.decode(payload, self)
+
+    def updateKey(self):
+        now = int(time.time())
+        oldkey = self.key
+        oldcert = self.certificate
+        olddata = self.cert_data
+        if now > self.last_stat + self.poll_interval:
+            try:
+                sbk = os.stat(self.key_file)
+            except Exception, e:
+                logging.error("Failed to stat key file: %s" % e)
+
+            try:
+                sbc = os.stat(self.cert_file)
+            except Exception, e:
+                logging.error("Failed to stat cert file: %s" % e)
+
+            if sbk.st_mtime > self.last_stat:
+                if sbc.st_mtime <= self.last_stat:
+                    logging.error("Key updated but not certificate!  Skipping.")
+                else:
+                    try:
+                        self.setKey(self.key_file)
+                        try:
+                            self.load_cert(self.cert_file)
+                        except:
+                            # Revert to the previous state
+                            self.key = oldkey
+                            self.certificate = oldcert
+                            self.cert_data = olddata
+                        # FIXME  Need to verify the new key and cert are a
+                        #        matching pair
+                    except:
+                        # Swallow the error, keep on ticking. Logging occurred
+                        # in the methods
+                        pass
+                    logging.info("keys updated")
+            # Record time of last stat as long as we didn't encounter an
+            # unhandled exception
+            self.last_stat = now
 
     def setKey(self, name):
         try:
