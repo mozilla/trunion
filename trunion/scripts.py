@@ -1,5 +1,5 @@
 import sys
-from trunion.util import check_keys as _check_keys
+from trunion.utils import check_keys as _check_keys
 
 
 def check_keys():
