@@ -52,5 +52,5 @@ def update(ctx):
 @task
 def deploy(ctx):
     verify_keys()
-    ctx.local(ctx.DEPLOY_SCRIPT)
+    ctx.local(settings.DEPLOY_SCRIPT)
     shipit()
