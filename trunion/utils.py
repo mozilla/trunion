@@ -16,23 +16,7 @@ def conv(a):
     return struct.pack('>I', len(__) + 1) + "\x00" + __
 
 
-def check_keys(path):
-    config = ConfigParser.ConfigParser()
-
-    try:
-        config.read(path)
-    except ConfigParser.Error, e:
-        print "INI file doesn't seem to be parseable by ConfigParser: %s" % e
-        sys.exit(1)
-
-    try:
-        certfile = config.get('trunion', 'certfile')
-        keyfile = config.get('trunion', 'keyfile')
-    except ConfigParser.NoOptionError:
-        print "keyfile or certfile options are missing from the trunion " \
-              "section of the config."
-        sys.exit(1)
-
+def check_keys(certfile, keyfile):
     # Load the private key
     try:
         priv = M2Crypto.RSA.load_key(keyfile)
@@ -90,3 +74,23 @@ def check_keys(path):
         sys.exit(1)
 
     print "Looks good."
+
+
+def check_keys_from_config(path):
+    config = ConfigParser.ConfigParser()
+
+    try:
+        config.read(path)
+    except ConfigParser.Error, e:
+        print "INI file doesn't seem to be parseable by ConfigParser: %s" % e
+        sys.exit(1)
+
+    try:
+        certfile = config.get('trunion', 'certfile')
+        keyfile = config.get('trunion', 'keyfile')
+    except ConfigParser.NoOptionError:
+        print "keyfile or certfile options are missing from the trunion " \
+              "section of the config."
+        sys.exit(1)
+
+    check_keys(certfile, keyfile)
