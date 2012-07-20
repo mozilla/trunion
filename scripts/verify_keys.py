@@ -5,7 +5,7 @@ import sys
 usage = 'verify_keys.py [cert] [key]'
 
 sys.path.append(os.path.join(
-                 '..', '..', os.path.dirname(os.path.abspath(__file))))
+                 os.path.dirname(os.path.abspath(__file__)), '..'))
 
 from trunion.utils import check_keys
 
