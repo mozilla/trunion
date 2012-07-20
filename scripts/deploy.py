@@ -33,6 +33,9 @@ def verify_keys(ctx):
         settings.KEY,
     ))
 
+    ctx.local('chmod 644 %s %s' % (settings.CERT, settings.KEY))
+    ctx.local('chown root:root %s %s' % (settings.CERT, settings.KEY))
+
 
 @task
 def pre_update(ctx, ref='origin/master'):
@@ -48,5 +51,6 @@ def update(ctx):
 
 @task
 def deploy(ctx):
+    verify_keys()
     ctx.local(ctx.DEPLOY_SCRIPT)
     shipit()
