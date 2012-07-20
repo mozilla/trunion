@@ -1,0 +1,9 @@
+REMOTE_UPDATE_SCRIPT = '/data/bin/update-www.sh'
+SSH_KEY = '/root/keys/addons-updater'
+VIRTUAL_ENV = '/data/addons-signer/trunion/venv'
+
+APP_DIR = '/data/trunion'
+CERT = '/data/addons-signer/keys/apps.jwt'
+KEY = '/data/addons-signer/keys/apps.pem'
+
+DEPLOY_SCRIPT = '/data/addons-signer/deploy -n signer.addons.phx1.mozilla.com'
