@@ -45,7 +45,7 @@ def check_keys(certfile, keyfile, check_expiration=False):
         now = int(time.time())
         limit = now + check_expiration
         if cert['exp'] < limit:
-            print 'Certificate will expire within %s seconds.' % check_expiration
+            print 'Certificate will expire in %s seconds.' % (cert['exp'] - now)
             sys.exit(1)
 
     # Convert the JWK into a form usable by M2Crypto
