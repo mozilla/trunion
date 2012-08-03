@@ -7,6 +7,7 @@
 #
 
 import sys, ConfigParser, struct
+import time
 import M2Crypto, hashlib, jwt, json, requests
 
 # Convert a JWK exponent or modulus from base64 URL safe encoded big endian
@@ -16,8 +17,14 @@ def conv(a):
     return struct.pack('>I', len(__) + 1) + "\x00" + __
 
 
-def check_keys(certfile, keyfile):
-    # Load the private key
+def check_keys(certfile, keyfile, check_expiration=False):
+    """
+    Load the private key
+
+    check_expiration should be the number of seconds until the key expires
+        e.g., 86400 would check that the key is fresh at least until tomorrow
+        at the same time.
+    """ 
     try:
         priv = M2Crypto.RSA.load_key(keyfile)
     except Exception, e:
@@ -33,6 +40,13 @@ def check_keys(certfile, keyfile):
         cert = jwt.decode(cert_data, verify=False)
     except Exception, e:
         print "Failed to decode JWT: %s" % e
+
+    if check_expiration:
+        now = int(time.time())
+        limit = now + check_expiration
+        if cert['exp'] < limit:
+            print 'Certificate will expire within %s seconds.' % check_expiration
+            sys.exit(1)
 
     # Convert the JWK into a form usable by M2Crypto
     try:
@@ -76,7 +90,7 @@ def check_keys(certfile, keyfile):
     print "Looks good."
 
 
-def check_keys_from_config(path):
+def check_keys_from_config(path, check_expiration=False):
     config = ConfigParser.ConfigParser()
 
     try:
@@ -93,4 +107,4 @@ def check_keys_from_config(path):
               "section of the config."
         sys.exit(1)
 
-    check_keys(certfile, keyfile)
+    check_keys(certfile, keyfile, check_expiration)
