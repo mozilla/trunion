@@ -3,3 +3,4 @@ pyramid == 1.2.1
 mozsvc == 0.3
 gunicorn == 0.14.2
 cornice == 0.8
+-e git://github.com/rtilder/pyjwt.git@aa3be513795c1a623dfc61c6c0a688198ea5d303#egg=pyjwt
