@@ -12,3 +12,4 @@ zope.deprecation == 3.5
 zope.event == 3.5.1
 zope.interface == 3.8
 mozsvc == 0.3
+-e git://github.com/rtilder/pyjwt.git@aa3be513795c1a623dfc61c6c0a688198ea5d303#egg=pyjwt
