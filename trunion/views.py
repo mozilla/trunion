@@ -3,12 +3,12 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 # ***** END LICENSE BLOCK *****
-
 """ Cornice services.
 """
 from cornice import Service
+import apps
 import crypto
-from validators import valid_receipt
+from validators import valid_app, valid_receipt
 
 sign = Service(name='sign', path='/1.0/sign', description="Receipt signer")
 
@@ -28,3 +28,16 @@ def sign_receipt(request):
     result.append(crypto.sign_jwt(receipt))
 
     return {'receipt': '~'.join(result)}
+
+signapp = Service(name='sign_app', path='/1.0/sign_app',
+                  description="Privileged application signer")
+
+@signapp.post(validators=valid_app)
+def sign_app(request):
+    if request.registry.settings['we_are_signing'] != 'apps':
+        raise HTTPUnsupportedMediaType()
+
+    signatures = apps.Manifest.parse(request.params['signatures'])
+    pkcs7 = crypto.sign_app(str(signatures))
+
+    return {'signature': pkcs7}

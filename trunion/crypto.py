@@ -21,6 +21,8 @@ class KeyStore(object):
     def __init__(self, key, cert, interval=60):
         self.key_file = key
         self.cert_file = cert
+        # SMIME object for signing apps
+        self.smime = M2Crypto.SMIME.SMIME()
 
         # FIXME Verify that it's actually a paired set of keys
         self.setKey(self.key_file)
@@ -89,6 +91,8 @@ class KeyStore(object):
     def setKey(self, name):
         try:
             self.key = M2Crypto.EVP.load_key(name)
+            # We short circuit the key loading functions in the SMIME class
+            self.smime.pkey = self.privkey
         except M2Crypto.BIO.BIOError, e:
             logging.error("Failed to load key: %s" % e)
             raise
@@ -132,3 +136,12 @@ def verify_jwt(input_data):
 
 def get_certificate():
     return KEYSTORE.certificate
+
+
+def sign_app(data):
+    # XPI signing is JAR signing which uses PKCS7 detached signatures
+    pkcs7 = self.smime.sign(M2Crypto.BIO.MemoryBuffer(str(data)),
+                            M2Crypto.SMIME.PKCS7_DETACHED | M2Crypto.SMIME.PKCS7_BINARY)
+    pkcs7_buffer = M2Crypto.BIO.MemoryBuffer()
+    pkcs7.write_der(pkcs7_buffer)
+    return pkcs7.read()
