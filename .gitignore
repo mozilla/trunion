@@ -3,7 +3,9 @@ include
 lib
 man
 src
+trunion.egg-info
 *.pyc
+.channel
 .Python
 *~
 *.swp
