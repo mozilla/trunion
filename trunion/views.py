@@ -9,6 +9,7 @@ from cornice import Service
 import apps
 import crypto
 from validators import valid_app, valid_receipt
+from base64 import b64encode
 
 sign = Service(name='sign', path='/1.0/sign', description="Receipt signer")
 
@@ -34,10 +35,9 @@ signapp = Service(name='sign_app', path='/1.0/sign_app',
 
 @signapp.post(validators=valid_app)
 def sign_app(request):
-    if request.registry.settings['we_are_signing'] != 'apps':
+    if request.registry.settings['trunion.we_are_signing'] != 'apps':
         raise HTTPUnsupportedMediaType()
 
-    signatures = apps.Manifest.parse(request.params['signatures'])
+    signatures = apps.Signature.parse(request.body)
     pkcs7 = crypto.sign_app(str(signatures))
-
-    return {'signature': pkcs7}
+    return {'zigbert.rsa': b64encode(pkcs7)}

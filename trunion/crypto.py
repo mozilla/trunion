@@ -15,18 +15,26 @@ import time
 import json
 import os
 import random
+import re
+
+CERTIFICATE_RE = re.compile(r"-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----", re.S)
+
 
 class KeyStore(object):
 
-    def __init__(self, key, cert, interval=60):
+    def __init__(self, key, cert, chain=None, interval=60):
         self.key_file = key
         self.cert_file = cert
+        self.chain = chain
+        self.cert_data = None
+
         # SMIME object for signing apps
         self.smime = M2Crypto.SMIME.SMIME()
 
         # FIXME Verify that it's actually a paired set of keys
         self.setKey(self.key_file)
         self.load_cert(self.cert_file)
+        self.load_chain(self.chain)
 
         self.last_stat = time.time()
         # Some slight fuzzing of poll interval at atoll's request
@@ -36,13 +44,23 @@ class KeyStore(object):
         self.updateKey()
         return self.key.get_rsa().sign(data, hash_alg)
 
+    def sign_app(self, data):
+        self.updateKey()
+        # XPI signing is JAR signing which uses PKCS7 detached signatures
+        pkcs7 = self.smime.sign(M2Crypto.BIO.MemoryBuffer(str(data)),
+                                M2Crypto.SMIME.PKCS7_DETACHED
+                                | M2Crypto.SMIME.PKCS7_BINARY)
+        pkcs7_buf = M2Crypto.BIO.MemoryBuffer()
+        pkcs7.write_der(pkcs7_buf)
+        return pkcs7_buf.read()
+
     def verify(self, digest, signature, alg):
         self.key.verify_init()
         self.key.verify_update(digest)
         return self.key.verify_final(signature)
 
     def encode_jwt(self, payload):
-        header=dict(alg=u'RS256', typ='JWT', jku=self.cert_data['iss'])
+        header = dict(alg=u'RS256', typ='JWT', jku=self.cert_data['iss'])
         return jwt.encode(payload, self, header=header)
 
     def decode_jwt(self, payload):
@@ -72,6 +90,7 @@ class KeyStore(object):
                         self.setKey(self.key_file)
                         try:
                             self.load_cert(self.cert_file)
+                            self.load_chain(self.chain)
                         except:
                             # Revert to the previous state
                             self.key = oldkey
@@ -92,7 +111,7 @@ class KeyStore(object):
         try:
             self.key = M2Crypto.EVP.load_key(name)
             # We short circuit the key loading functions in the SMIME class
-            self.smime.pkey = self.privkey
+            self.smime.pkey = self.key
         except M2Crypto.BIO.BIOError, e:
             logging.error("Failed to load key: %s" % e)
             raise
@@ -108,9 +127,28 @@ class KeyStore(object):
             except jwt.DecodeError:
                 # This may raise an exception but that's ok
                 self.cert_data = json.loads(self.certificate)['jwk'][0]
-        except Exception:
+        except:
             logging.error("Unable to load certificate for key '%s': cannot find '%s.crt' file in working directory" % (name, name))
             raise  # IOError("Unable to load certificate for key '%s'" % name)
+
+    def load_chain(self, name):
+        if not name:
+            return
+        try:
+            with open(name, 'r') as f:
+                chain = f.read()
+                certs = CERTIFICATE_RE.finditer(chain)
+                stack = M2Crypto.X509.X509_Stack()
+                # The signing certificate isn't used
+                #signing_cert = M2Crypto.X509.load_cert_string(certs.pop().group(0))
+                self.smime.x509 = M2Crypto.X509.load_cert_string(certs.next().group(0))
+                for cert in certs:
+                    _c = M2Crypto.X509.load_cert_string(cert.group(0))
+                    stack.push(_c)
+                self.smime.set_x509_stack(stack)
+        except:
+            logging.error("Unable to load SMIME certificates")
+            raise
 
 
 KEYSTORE = None
@@ -139,9 +177,4 @@ def get_certificate():
 
 
 def sign_app(data):
-    # XPI signing is JAR signing which uses PKCS7 detached signatures
-    pkcs7 = self.smime.sign(M2Crypto.BIO.MemoryBuffer(str(data)),
-                            M2Crypto.SMIME.PKCS7_DETACHED | M2Crypto.SMIME.PKCS7_BINARY)
-    pkcs7_buffer = M2Crypto.BIO.MemoryBuffer()
-    pkcs7.write_der(pkcs7_buffer)
-    return pkcs7.read()
+    return KEYSTORE.sign_app(data)

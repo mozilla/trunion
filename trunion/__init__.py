@@ -20,7 +20,8 @@ def includeme(config):
     config.scan("trunion.views")
 
     crypto.init(key=config.registry.settings['trunion.keyfile'],
-                cert=config.registry.settings['trunion.certfile'])
+                cert=config.registry.settings['trunion.certfile'],
+                chain=config.registry.settings['trunion.chainfile'])
 
     issuers = config.registry.settings.get('trunion.permitted_issuers', '')
     issuers = issuers.split(',')

@@ -14,7 +14,8 @@ import crypto
 # From https://github.com/mozilla/browserid/blob/dev/lib/sanitize.js
 EMAIL_REGEX = re.compile("^[-\w.!#$%&'*+/=?\^`{|}~]+@[-a-z\d_]+(\.[-a-z\d_]+)+$",
                          re.I)
-PROD_URL_REGEX = re.compile("^https?:\/\/[-a-z\d_]+(\.[-a-z\d_]+)*(:\d+)?$", re.I)
+PROD_URL_REGEX = re.compile("^https?:\/\/[-a-z\d_]+(\.[-a-z\d_]+)*(:\d+)?$",
+                            re.I)
 
 # TODO
 #    Don't permit other than the required fields to be safe:
@@ -90,4 +91,10 @@ def valid_product(obj):
         raise HTTPBadRequest("Invalid product struct: URL doesn't look like HTTPS")
     if len(obj['storedata']) < 1:
         raise HTTPBadRequest('Invalid product struct: storedata appears to be empty')
+    return True
+
+
+def valid_app(request):
+    """
+    """
     return True

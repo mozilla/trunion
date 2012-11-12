@@ -5,17 +5,15 @@
 # ***** END LICENSE BLOCK *****
 
 import unittest
-import time
 import os
-import json
 
 from pyramid import testing
-from pyramid.compat import text_
 from pyramid.httpexceptions import HTTPBadRequest, HTTPConflict
 from mozsvc.config import load_into_settings
 
+from trunion.apps import JarExtractor
 from trunion.validators import valid_receipt
-from trunion.views import sign_receipt
+from trunion.views import sign_app
 import trunion.crypto as crypto
 
 
@@ -134,10 +132,7 @@ class ValidateTest(TrunionTest):
                                                 'value': 'hal@9000'}))
         self.assertRaises(HTTPBadRequest, valid_receipt, request)
 
-
     def test_validate_product(self):
-        post=dict(self._template,
-                  product='not a dict!')
         request = StupidRequest(path=self.path,
                                 post=dict(self._template,
                                           product='not a dict!'))
@@ -164,14 +159,102 @@ class ValidateTest(TrunionTest):
                                                    'storedata': ''}))
         self.assertRaises(HTTPBadRequest, valid_receipt, request)
 
-        request = StupidRequest(path=self.path,
-                                post=dict(self._template,
-                                          product={'url': 'https://grumpybadgers.com',
-                                                   'storedata': "Mr. A Square, Flatland"}))
-        self.assertRaises(HTTPBadRequest, valid_receipt, request)
+        # These aren't really accurate tests any longer
+        #
+        #request = StupidRequest(path=self.path,
+        #                        post=dict(self._template,
+        #                                  product={'url': 'https://grumpybadgers.com',
+        #                                           'storedata': "Mr. A Square, Flatland"}))
+        #self.assertRaises(HTTPBadRequest, valid_receipt, request)
 
-        request = StupidRequest(path=self.path,
-                                post=dict(self._template,
-                                          product={'url': 'https://grumpybadgers.com',
-                                                   'storedata': 200.01}))
-        self.assertRaises(HTTPBadRequest, valid_receipt, request)
+        #request = StupidRequest(path=self.path,
+        #                        post=dict(self._template,
+        #                                  product={'url': 'https://grumpybadgers.com',
+        #                                           'storedata': 200.01}))
+        #self.assertRaises(HTTPBadRequest, valid_receipt, request)
+
+
+class TrunionAppsTest(unittest.TestCase):
+
+    MANIFEST = """Manifest-Version: 1.0
+
+Name: test-file
+Digest-Algorithms: MD5 SHA1
+MD5-Digest: 5BXJnAbD0DzWPCj6Ve/16w==
+SHA1-Digest: 5Hwcbg1KaPMqjDAXV/XDq/f30U0=
+
+Name: test-dir/nested-test-file
+Digest-Algorithms: MD5 SHA1
+MD5-Digest: 53dwfEn/GnFiWp0NQyqWlA==
+SHA1-Digest: 4QzlrC8QyhQW1T0/Nay5kRr3gVo=
+"""
+
+    SIGNATURE = """Signature-Version: 1.0
+MD5-Digest-Manifest: dughN2Z8uP3eXIZm7GVpjA==
+SHA1-Digest-Manifest: rnDwKcEuRYqy57DFyzwK/Luul+0="""
+
+    SIGNATURES = """Signature-Version: 1.0
+MD5-Digest-Manifest: dughN2Z8uP3eXIZm7GVpjA==
+SHA1-Digest-Manifest: rnDwKcEuRYqy57DFyzwK/Luul+0=
+
+Name: test-file
+Digest-Algorithms: MD5 SHA1
+MD5-Digest: jf86A0RSFH3oREWLkRAoIg==
+SHA1-Digest: 9O+Do4sVlAh82x9ZYu1GbtyNToA=
+
+Name: test-dir/nested-test-file
+Digest-Algorithms: MD5 SHA1
+MD5-Digest: YHTqD4SINsoZngWvbGIhAA==
+SHA1-Digest: lys436ZGYKrHY6n57Iy/EyF5FuI=
+"""
+
+    SHA1SUM = "7437d73905c40bd23b16f8543e7ba0a2c1e8df17"
+
+    def setUp(self):
+        self.path = '/1.0/sign_app'
+        self.config = testing.setUp()
+        self.ini = os.path.join(os.path.dirname(__file__), 'trunion-test.ini')
+        settings = {}
+        load_into_settings(self.ini, settings)
+        self.config.add_settings(settings)
+        self.config.include("trunion")
+        # All of that just for this
+        crypto.init(key=self.config.registry.settings['trunion.keyfile'],
+                    cert=self.config.registry.settings['trunion.certfile'],
+                    chain=self.config.registry.settings['trunion.chainfile'])
+
+    def _extract(self, omit=False):
+        return JarExtractor('trunion/tests/test-jar.zip',
+                            'trunion/tests/test-jar-signed.jar',
+                            omit_signature_sections=omit)
+
+    def test_00_extractor(self):
+        self.assertTrue(isinstance(self._extract(), JarExtractor))
+
+    def test_01_manifest(self):
+        extracted = self._extract()
+        self.assertEqual(str(extracted.manifest), self.MANIFEST)
+
+    def test_02_signature(self):
+        extracted = self._extract()
+        self.assertEqual(str(extracted.signature), self.SIGNATURE)
+
+    def test_03_signatures(self):
+        extracted = self._extract()
+        self.assertEqual(str(extracted.signatures), self.SIGNATURES)
+
+    def test_04_signatures_omit(self):
+        extracted = self._extract(True)
+        self.assertEqual(str(extracted.signatures), self.SIGNATURE)
+
+    def test_05_sign_app(self):
+        extracted = self._extract(True)
+        request = StupidRequest(path="/1.0/sign_app",
+                                post={'zigbert.sf': extracted.signatures})
+        response = sign_app(request)
+        from pprint import pprint
+        pprint(dir(response))
+        pprint(response)
+
+    def tearDown(self):
+        testing.tearDown()
