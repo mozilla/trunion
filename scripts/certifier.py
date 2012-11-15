@@ -1,7 +1,7 @@
 import argparse
 import M2Crypto, jwt, json, time, requests, struct, hashlib
 
-DEFAULT_ISSUER = 'https://marketplace-cdn.addons.mozilla.net/public_keys/appstore-root-pub-key.jwk'
+DEFAULT_ISSUER = 'https://marketplace.cdn.mozilla.net/public_keys/marketplace-root-pub-key.jwk'
 
 
 class KeyMismatchError(Exception): pass
