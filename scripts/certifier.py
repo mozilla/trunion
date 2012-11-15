@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import argparse
 import M2Crypto, jwt, json, time, requests, struct, hashlib
 
@@ -177,7 +178,8 @@ def certify(args, priv=None):
         }
 
     envelope = jwt.encode(certificate, signing_priv,
-                          header=dict(jku=args.issuer, typ='JWT', alg='RS256'))
+                          header=dict(jku=args.issuer, typ='JWT', alg='RS256'),
+                          algorithm='RS256')
     save_jwsplat(args, 'jwt', envelope)
 
 
@@ -259,6 +261,9 @@ def run(argv):
                                   "friendly name")
     cmd_pem2jwk.add_argument('--jwk', default=None, help="")
     cmd_pem2jwk.set_defaults(func=pem2jwk)
+
+    while argv[0] in ('python', __file__):
+        argv.pop(0)
 
     args = cmdline.parse_args(argv)
     args.func(args)
