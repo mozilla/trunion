@@ -8,7 +8,7 @@ import requests
 import time
 import struct
 
-DEFAULT_ISSUER = 'https://marketplace.cdn.mozilla.net/public_keys/marketplace-root-pub-key.jwk'
+DEFAULT_ISSUER = 'https://marketplace.cdn.mozilla.net/public_keys/marketplace-root-pub-key.jwk' # noqa
 
 
 class KeyMismatchError(Exception):
@@ -255,7 +255,7 @@ def run(argv):
                          default="appstore.mozilla.com-%s" %
                              time.strftime('%F', time.gmtime()),
                          help="The key ID.  Should be a file system "
-                             "friendly name")
+                              "friendly name")
         sub.add_argument('--signing-key', dest='signing_id',
                          help="Path to the signing key PEM or HSM's ID for "
                              "signing key")
@@ -275,13 +275,10 @@ def run(argv):
     cmd_pem2jwk.add_argument('--jwk', default=None, help="")
     cmd_pem2jwk.set_defaults(func=pem2jwk)
 
-    while argv[0] in ('python', __file__):
-        argv.pop(0)
-
     args = cmdline.parse_args(argv)
     args.func(args)
 
 
 if __name__ == '__main__':
     import sys
-    run(sys.argv)
+    run(sys.argv[1:])
