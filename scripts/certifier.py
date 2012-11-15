@@ -1,11 +1,18 @@
 #!/usr/bin/env python
 import argparse
-import M2Crypto, jwt, json, time, requests, struct, hashlib
+import hashlib
+import json
+import jwt
+import M2Crypto
+import requests
+import time
+import struct
 
 DEFAULT_ISSUER = 'https://marketplace.cdn.mozilla.net/public_keys/marketplace-root-pub-key.jwk'
 
 
-class KeyMismatchError(Exception): pass
+class KeyMismatchError(Exception):
+    pass
 
 
 def day_string(arg):
@@ -38,6 +45,7 @@ def day_string(arg):
         raise ValueError("Invalid day string format: \"%s\"" % arg)
     return sum
 
+
 # For production, we use an HSM stored private key which is access via
 # OpenSSL's crypto engine support
 def get_signing(args):
@@ -47,10 +55,11 @@ def get_signing(args):
         M2Crypto.Engine.load_dynamic()
         engine = M2Crypto.Engine.Engine("chil")
         if not engine.set_default(M2Crypto.m2.ENGINE_METHOD_RSA):
-            raise Exception("Could not inialize nCipher OpenSSL engine " \
-                                "properly. Make sure LD_LIBRARY_PATH " \
-                                "contains /opt/nfast/toolkits/hwcrhk")
+            raise Exception("Could not inialize nCipher OpenSSL engine "
+                            "properly. Make sure LD_LIBRARY_PATH "
+                            "contains /opt/nfast/toolkits/hwcrhk")
         return engine.load_private_key(args.signing_id).get_rsa()
+
 
 def new_rsa_key(args):
     if args.verbose:
@@ -58,6 +67,7 @@ def new_rsa_key(args):
     else:
         def NoOp(): pass
         return M2Crypto.RSA.gen_key(args.bits, 0x10001, NoOp)
+
 
 def jwk2rsa(jwk):
     # Converts a JWK exponent or modulus from base64 URL safe encoded big endian
@@ -68,10 +78,11 @@ def jwk2rsa(jwk):
 
     try:
         return M2Crypto.RSA.new_pub_key((conv(jwk['jwk'][0]['exp']),
-                                                conv(jwk['jwk'][0]['mod'])))
+                                         conv(jwk['jwk'][0]['mod'])))
     except Exception, e:
         print "Failed to create RSA object from root's JWK: %s" % e
         raise e
+
 
 def fetch_pubkey(url):
     # Fetch the issuer's public key from the URL provided by the key
@@ -81,9 +92,9 @@ def fetch_pubkey(url):
         if response.status_code == 200:
             jwk = json.loads(response.text)
             if url.strip() != jwk['jwk'][0]['kid']:
-                raise KeyMismatchError("Fetched URL(%s) does not match the " \
-                                       "key ID of parsed JWK(%s)" \
-                                           % (url, jwk['jwk'][0]['kid']))
+                raise KeyMismatchError("Fetched URL(%s) does not match the "
+                                       "key ID of parsed JWK(%s)"
+                                       % (url, jwk['jwk'][0]['kid']))
             return jwk
         else:
             raise requests.RequestException("Received a %d" % response.status)
@@ -94,6 +105,7 @@ def fetch_pubkey(url):
         print "Failed to convert fetched root pub key: %s" % e
         raise e
 
+
 def jwkify(pub, keyid):
     if isinstance(pub, M2Crypto.RSA.RSA) \
             or isinstance(pub, M2Crypto.RSA.RSA_pub):
@@ -101,10 +113,11 @@ def jwkify(pub, keyid):
     elif type(pub) != tuple:
         raise ValueError("jwkify expects an RSA object or a tuple")
 
-    return dict(jwk=[ { "alg": "RSA",
-                        "kid": keyid,
-                        "exp": jwt.base64url_encode(pub[0][4:]),
-                        "mod": jwt.base64url_encode(pub[1][4:]) } ])
+    return dict(jwk=[{"alg": "RSA",
+                      "kid": keyid,
+                      "exp": jwt.base64url_encode(pub[0][4:]),
+                      "mod": jwt.base64url_encode(pub[1][4:])}])
+
 
 def save_jwsplat(args, typ, value):
     if hasattr(args, typ):
@@ -118,6 +131,7 @@ def save_jwsplat(args, typ, value):
     with open(filename, 'w') as f:
         f.write(value)
     print "Saved to %s" % filename
+
 
 #
 # Subcommand functions
@@ -175,7 +189,7 @@ def certify(args, priv=None):
         "iat": long(issued_at),
         "price_limit": args.price_limit,
         "iss": args.issuer
-        }
+    }
 
     envelope = jwt.encode(certificate, signing_priv,
                           header=dict(jku=args.issuer, typ='JWT', alg='RS256'),
@@ -207,21 +221,20 @@ def run(argv):
     cmdline.add_argument("--verbose", "-v", action='store_true')
     cmds = cmdline.add_subparsers(help="Available commands")
 
-
     cmd_newkey = cmds.add_parser('newkey', help='')
-    cmd_certify = cmds.add_parser('certify', help="Issues a JWK-in-a-JWT " \
-                                                  "certificate from an " \
+    cmd_certify = cmds.add_parser('certify', help="Issues a JWK-in-a-JWT "
+                                                  "certificate from an "
                                                   "existing PEM file.")
     cmd_newcert = cmds.add_parser('newcert',
-                                  help="Generates a new key and issues a new " \
+                                  help="Generates a new key and issues a new "
                                        "JWK-in-a-JWT certificate in one step.")
     cmd_pem2jwk = cmds.add_parser('pem2jwk', help='')
 
     # newkey
     cmd_newkey.add_argument('keyid',
-                            default="appstore.mozilla.com-%s" % \
+                            default="appstore.mozilla.com-%s" %
                                 time.strftime('%F', time.gmtime()),
-                            help="The key ID.  Should be a file system " \
+                            help="The key ID.  Should be a file system "
                                  "friendly name")
     cmd_newkey.add_argument('--bits', '-b', dest='bits', default=2048,
                             help="Size of the key in bits, default 2048")
@@ -239,12 +252,12 @@ def run(argv):
     # Shared args for certify and newcert subcommands
     for sub in (cmd_certify, cmd_newcert):
         sub.add_argument('--keyid',
-                         default="appstore.mozilla.com-%s" % \
+                         default="appstore.mozilla.com-%s" %
                              time.strftime('%F', time.gmtime()),
-                         help="The key ID.  Should be a file system " \
+                         help="The key ID.  Should be a file system "
                              "friendly name")
         sub.add_argument('--signing-key', dest='signing_id',
-                         help="Path to the signing key PEM or HSM's ID for " \
+                         help="Path to the signing key PEM or HSM's ID for "
                              "signing key")
         sub.add_argument('--lifetime', type=day_string, default='2w',
                          help="Life time of the certificate be expiration")
@@ -255,9 +268,9 @@ def run(argv):
     # pem2jwk
     cmd_pem2jwk.add_argument('pem', help='Path to the PEM file')
     cmd_pem2jwk.add_argument('--keyid',
-                             default="appstore.mozilla.com-%s" % \
+                             default="appstore.mozilla.com-%s" %
                                  time.strftime('%F', time.gmtime()),
-                             help="The key ID.  Should be a file system " \
+                             help="The key ID.  Should be a file system "
                                   "friendly name")
     cmd_pem2jwk.add_argument('--jwk', default=None, help="")
     cmd_pem2jwk.set_defaults(func=pem2jwk)
