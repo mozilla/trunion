@@ -12,13 +12,15 @@ import commander_settings as settings
 
 @task
 def create_virtualenv(ctx):
+    venv = settings.VIRTUAL_ENV
     ctx.local("virtualenv --distribute --system-site-packages --never-download %s" % settings.VIRTUAL_ENV)
-    ctx.local("rm -f %s/lib64 && ln -s ./lib %s/lib64" % (settings.VIRTUAL_ENV, settings.VIRTUAL_ENV))
-    ctx.local("%s/bin/pip install -I --download-cache=/tmp/pip-cache -M -r %s/prod-reqs.txt" % (settings.VIRTUAL_ENV, settings.APP_DIR))
-    ctx.local("virtualenv --relocatable %s" % settings.VIRTUAL_ENV)
+    ctx.local('%s/bin/pip install -I --exists-action=w '
+              '--no-deps --no-index --download-cache=/tmp/pip-cache '
+              '-f %s -r %s/prod-reqs.txt' % (venv, settings.PYREPO, settings.APP_DIR))
+    ctx.local("%s/bin/python /usr/bin/virtualenv --relocatable %s" % (venv, venv))
 
 
-@hostgroups('addons-signer', remote_kwargs={'ssh_key': settings.SSH_KEY})
+@hostgroups(settings.WEB_HOSTGROUP, remote_kwargs={'ssh_key': settings.SSH_KEY})
 def shipit(ctx):
     ctx.remote(settings.REMOTE_UPDATE_SCRIPT)
     ctx.remote("/sbin/service gunicorn-addons-signer graceful")
