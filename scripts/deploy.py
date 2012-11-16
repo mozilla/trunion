@@ -23,7 +23,8 @@ def create_virtualenv(ctx):
 @hostgroups(settings.WEB_HOSTGROUP, remote_kwargs={'ssh_key': settings.SSH_KEY})
 def shipit(ctx):
     ctx.remote(settings.REMOTE_UPDATE_SCRIPT)
-    ctx.remote("/sbin/service gunicorn-addons-signer graceful")
+    for gunicorn in settings.GUNICORNS:
+        ctx.remote("/sbin/service %s graceful" % gunicorn)
 
 
 @task
@@ -53,6 +54,8 @@ def update(ctx):
 
 @task
 def deploy(ctx):
-    verify_keys()
+    if settings.get('VERIFY_KEYS', True):
+        verify_keys()
+
     ctx.local(settings.DEPLOY_SCRIPT)
     shipit()
