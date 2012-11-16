@@ -54,7 +54,7 @@ def update(ctx):
 
 @task
 def deploy(ctx):
-    if settings.get('VERIFY_KEYS', True):
+    if getattr(settings, 'VERIFY_KEYS', True):
         verify_keys()
 
     ctx.local(settings.DEPLOY_SCRIPT)
