@@ -61,7 +61,8 @@ class KeyStore(object):
 
     def encode_jwt(self, payload):
         header = dict(alg=u'RS256', typ='JWT', jku=self.cert_data['iss'])
-        return jwt.encode(payload, self, header=header)
+        return jwt.encode(payload, self, header=header,
+                          algorithm='RS256')
 
     def decode_jwt(self, payload):
         return jwt.decode(payload, self)
