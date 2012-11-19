@@ -5,13 +5,17 @@
 # ***** END LICENSE BLOCK *****
 """ Cornice services.
 """
-from cornice import Service
-import apps
-import crypto
-from validators import valid_app, valid_receipt
 from base64 import b64encode
 
+from cornice import Service
+import crypto
+from pyramid.httpexceptions import HTTPUnsupportedMediaType
+from signing_clients import apps
+from validators import valid_app, valid_receipt
+
+
 sign = Service(name='sign', path='/1.0/sign', description="Receipt signer")
+
 
 @sign.post(validators=valid_receipt)
 def sign_receipt(request):
@@ -32,6 +36,7 @@ def sign_receipt(request):
 
 signapp = Service(name='sign_app', path='/1.0/sign_app',
                   description="Privileged application signer")
+
 
 @signapp.post(validators=valid_app)
 def sign_app(request):
