@@ -6,11 +6,12 @@
 """ Cornice services.
 """
 from base64 import b64encode
+import os.path
+import re
 
 from cornice import Service
 import crypto
 from pyramid.httpexceptions import HTTPUnsupportedMediaType
-from signing_clients import apps
 from validators import valid_app, valid_receipt
 
 
@@ -43,6 +44,6 @@ def sign_app(request):
     if request.registry.settings['trunion.we_are_signing'] != 'apps':
         raise HTTPUnsupportedMediaType()
 
-    signatures = apps.Signature.parse(request.body)
-    pkcs7 = crypto.sign_app(str(signatures))
-    return {'zigbert.rsa': b64encode(pkcs7)}
+    fname = os.path.splitext(request.POST['file'].filename)[0]
+    pkcs7 = crypto.sign_app(request.POST['file'].file.read())
+    return {fname + '.rsa': b64encode(pkcs7)}

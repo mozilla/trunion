@@ -11,7 +11,7 @@ from pyramid import testing
 from pyramid.httpexceptions import HTTPBadRequest, HTTPConflict
 from mozsvc.config import load_into_settings
 
-from trunion.apps import JarExtractor
+from signing_clients.apps import JarExtractor
 from trunion.validators import valid_receipt
 from trunion.views import sign_app
 import trunion.crypto as crypto
