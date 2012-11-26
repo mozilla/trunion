@@ -8,7 +8,7 @@ import requests
 import time
 import struct
 
-DEFAULT_ISSUER = 'https://marketplace.cdn.mozilla.net/public_keys/marketplace-root-pub-key.jwk'
+DEFAULT_ISSUER = 'https://marketplace.cdn.mozilla.net/public_keys/marketplace-root-pub-key.jwk' # noqa
 
 
 class KeyMismatchError(Exception):
