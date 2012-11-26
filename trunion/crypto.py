@@ -19,6 +19,10 @@ import re
 
 CERTIFICATE_RE = re.compile(r"-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----", re.S)
 
+# Lame hack to take advantage of a not well known OpenSSL flag.  This omits
+# the S/MIME capabilities when generating a PKCS#7 signature.
+M2Crypto.SMIME.PKCS7_NOSMIMECAP = 0x200
+
 
 class KeyStore(object):
 
@@ -49,7 +53,8 @@ class KeyStore(object):
         # XPI signing is JAR signing which uses PKCS7 detached signatures
         pkcs7 = self.smime.sign(M2Crypto.BIO.MemoryBuffer(str(data)),
                                 M2Crypto.SMIME.PKCS7_DETACHED
-                                | M2Crypto.SMIME.PKCS7_BINARY)
+                                | M2Crypto.SMIME.PKCS7_BINARY
+                                | M2Crypto.SMIME.PKCS7_NOSMIMECAP)
         pkcs7_buf = M2Crypto.BIO.MemoryBuffer()
         pkcs7.write_der(pkcs7_buf)
         return pkcs7_buf.read()
