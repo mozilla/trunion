@@ -21,7 +21,8 @@ def includeme(config):
 
     crypto.init(key=config.registry.settings['trunion.keyfile'],
                 cert=config.registry.settings['trunion.certfile'],
-                chain=config.registry.settings['trunion.chainfile'])
+                chain=config.registry.settings['trunion.chainfile'],
+                engine=config.registry.settings.get('trunion.engine', None))
 
     issuers = config.registry.settings.get('trunion.permitted_issuers', '')
     issuers = issuers.split(',')
