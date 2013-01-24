@@ -26,11 +26,12 @@ M2Crypto.SMIME.PKCS7_NOSMIMECAP = 0x200
 
 class KeyStore(object):
 
-    def __init__(self, key, cert, chain=None, interval=60):
+    def __init__(self, key, cert, chain=None, interval=60, engine=None):
         self.key_file = key
         self.cert_file = cert
         self.chain = chain
         self.cert_data = None
+        self.engine = engine
 
         # SMIME object for signing apps
         self.smime = M2Crypto.SMIME.SMIME()
@@ -114,13 +115,27 @@ class KeyStore(object):
             self.last_stat = now
 
     def setKey(self, name):
-        try:
-            self.key = M2Crypto.EVP.load_key(name)
-            # We short circuit the key loading functions in the SMIME class
-            self.smime.pkey = self.key
-        except M2Crypto.BIO.BIOError, e:
-            logging.error("Failed to load key: %s" % e)
-            raise
+        if self.engine:
+            try:
+                M2Crypto.Engine.load_dynamic()
+                engine = M2Crypto.Engine.Engine(self.engine)
+                if not engine.set_default(M2Crypto.m2.ENGINE_METHOD_RSA):
+                    raise Exception("Could not inialize nCipher OpenSSL engine "
+                                    "properly. Make sure LD_LIBRARY_PATH "
+                                    "contains /opt/nfast/toolkits/hwcrhk")
+                self.key = engine.load_private_key(name)
+            except:  # I have no idea what might get raised
+                logging.error("Failed to load key \"%s\" from HSM" % name,
+                              exc_info=True)
+                raise
+        else:
+            try:
+                self.key = M2Crypto.EVP.load_key(name)
+            except M2Crypto.BIO.BIOError:
+                logging.error("Failed to load key: %s" % name, exc_info=True)
+                raise
+        # We short circuit the key loading functions in the SMIME class
+        self.smime.pkey = self.key
 
     def load_cert(self, name):
         # FIXME  Need to verify that the pubkey in the cert does match the
