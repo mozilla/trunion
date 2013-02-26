@@ -74,6 +74,10 @@ class KeyStore(object):
         return jwt.decode(payload, self)
 
     def updateKey(self):
+        # If we're using a hardware protected private key then there we are
+        # almost certainly not using automatic key rotation
+        if self.engine:
+            return
         now = int(time.time())
         oldkey = self.key
         oldcert = self.certificate
