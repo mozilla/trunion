@@ -16,6 +16,7 @@ docutils==0.9.1
 gunicorn==0.15.0
 mozsvc==0.3
 pyramid==1.2.1
+pyramid_exclog==0.7
 repoze.lru==0.6
 simplejson==2.6.2
 translationstring==1.1

@@ -14,7 +14,7 @@ import crypto
 # From https://github.com/mozilla/browserid/blob/dev/lib/sanitize.js
 EMAIL_REGEX = re.compile("^[-\w.!#$%&'*+/=?\^`{|}~]+@[-a-z\d_]+(\.[-a-z\d_]+)+$",
                          re.I)
-PROD_URL_REGEX = re.compile("^https?:\/\/[-a-z\d_]+(\.[-a-z\d_]+)*(:\d+)?$",
+PROD_URL_REGEX = re.compile("^(https|app):\/\/[-a-z\d_]+(\.[-a-z\d_]+)*(:\d+)?$",
                             re.I)
 
 # TODO
@@ -43,26 +43,22 @@ def valid_receipt(request):
     # should definitely include a window
     signing = crypto.KEYSTORE.cert_data
     if receipt['iss'] not in request.registry.settings['trunion.permitted_issuers']:
-        raise HTTPConflict('Bad issuer')
+        raise HTTPConflict("Bad issuer: \"%s\"" % receipt['iss'])
     if receipt['nbf'] < signing['iat']:
-        raise HTTPConflict('nbf < iat')
+        raise HTTPConflict("nbf(not before) of receipt < iat(issued at) of signing cert")
     if receipt['nbf'] > signing['exp']:
-        raise HTTPConflict('nbf > exp')
+        raise HTTPConflict("nbf(not before) of receipt > exp(expires at) of signing cert")
     if receipt['iat'] < signing['iat']:
-        raise HTTPConflict('iat < iat')
+        raise HTTPConflict("iat(issued at) of receipt < iat(issed at) of signing cert")
     if receipt['iat'] > signing['exp']:
-        raise HTTPConflict('iat > exp')
+        raise HTTPConflict("iat(issed at) of receipt > exp(expires at) of signing cert")
     if receipt['iat'] > now:
-        raise HTTPConflict('iat in the future')
+        raise HTTPConflict("iat(issued at) of receipt in the future")
 
     try:
         valid_user(receipt['user'])
-    except Exception, e:
-        raise
-
-    try:
         valid_product(receipt['product'])
-    except Exception, e:
+    except:
         raise
 
 
