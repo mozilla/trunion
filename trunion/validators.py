@@ -84,7 +84,8 @@ def valid_product(obj):
     if 'storedata' not in obj:
         raise HTTPBadRequest('Invalid product struct: no storedata')
     if not PROD_URL_REGEX.match(obj['url']):
-        raise HTTPBadRequest("Invalid product struct: URL doesn't look like HTTPS")
+        raise HTTPBadRequest("Invalid product struct: URL doesn't look like "
+                             "HTTPS or app://: \"%s\"" % obj['url'])
     if len(obj['storedata']) < 1:
         raise HTTPBadRequest('Invalid product struct: storedata appears to be empty')
     return True
