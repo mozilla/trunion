@@ -49,9 +49,9 @@ def valid_receipt(request):
     if receipt['nbf'] > signing['exp']:
         raise HTTPConflict("nbf(not before) of receipt > exp(expires at) of signing cert")
     if receipt['iat'] < signing['iat']:
-        raise HTTPConflict("iat(issued at) of receipt < iat(issed at) of signing cert")
+        raise HTTPConflict("iat(issued at) of receipt < iat(issued at) of signing cert")
     if receipt['iat'] > signing['exp']:
-        raise HTTPConflict("iat(issed at) of receipt > exp(expires at) of signing cert")
+        raise HTTPConflict("iat(issued at) of receipt > exp(expires at) of signing cert")
     if receipt['iat'] > now:
         raise HTTPConflict("iat(issued at) of receipt in the future")
 
