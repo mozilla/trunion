@@ -36,5 +36,6 @@ def includeme(config):
 
 def main(global_config, **settings):
     config = get_configurator(global_config, **settings)
+    config.include('pyramid_exclog')
     config.include(includeme)
     return config.make_wsgi_app()
