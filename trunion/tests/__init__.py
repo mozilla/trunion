@@ -159,6 +159,13 @@ class ValidateTest(TrunionTest):
                                                    'storedata': ''}))
         self.assertRaises(HTTPBadRequest, valid_receipt, request)
 
+    def test_validate_protocol(self):
+        for url in ['http://f.com', 'https://f.com', 'app://f.com']:
+            assert StupidRequest(path=self.path,
+                                 post=dict(self._template,
+                                           product={'url': url,
+                                                    'storedata': 's'}))
+
         # These aren't really accurate tests any longer
         #
         #request = StupidRequest(path=self.path,
