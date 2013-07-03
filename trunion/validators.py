@@ -14,7 +14,7 @@ import crypto
 # From https://github.com/mozilla/browserid/blob/dev/lib/sanitize.js
 EMAIL_REGEX = re.compile("^[-\w.!#$%&'*+/=?\^`{|}~]+@[-a-z\d_]+(\.[-a-z\d_]+)+$",
                          re.I)
-PROD_URL_REGEX = re.compile("^(https|app):\/\/[-a-z\d_]+(\.[-a-z\d_]+)*(:\d+)?$",
+PROD_URL_REGEX = re.compile("^(https?|app):\/\/[-a-z\d_]+(\.[-a-z\d_]+)*(:\d+)?$",
                             re.I)
 
 # TODO
@@ -85,7 +85,7 @@ def valid_product(obj):
         raise HTTPBadRequest('Invalid product struct: no storedata')
     if not PROD_URL_REGEX.match(obj['url']):
         raise HTTPBadRequest("Invalid product struct: URL doesn't look like "
-                             "HTTPS or app://: \"%s\"" % obj['url'])
+                             "http://, https:// or app://: \"%s\"" % obj['url'])
     if len(obj['storedata']) < 1:
         raise HTTPBadRequest('Invalid product struct: storedata appears to be empty')
     return True
