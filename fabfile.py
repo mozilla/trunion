@@ -52,6 +52,7 @@ def deploy():
                    domain=settings.DOMAIN,
                    root=ROOT,
                    package_dirs=['trunion', 'venv', 'ssl'])
+    helpers.restart_uwsgi(getattr(settings, 'UWSGI', []))
 
 
 @task
