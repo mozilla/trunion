@@ -7,7 +7,6 @@
 """
 from base64 import b64encode
 import os.path
-import re
 
 from cornice import Service
 import crypto
@@ -34,6 +33,7 @@ def sign_receipt(request):
     result.append(crypto.sign_jwt(receipt))
 
     return {'receipt': '~'.join(result)}
+
 
 signapp = Service(name='sign_app', path='/1.0/sign_app',
                   description="Privileged application signer")

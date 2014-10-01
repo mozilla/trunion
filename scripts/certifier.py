@@ -8,7 +8,7 @@ import requests
 import time
 import struct
 
-DEFAULT_ISSUER = 'https://marketplace.cdn.mozilla.net/public_keys/marketplace-root-pub-key.jwk' # noqa
+DEFAULT_ISSUER = 'https://marketplace.cdn.mozilla.net/public_keys/marketplace-root-pub-key.jwk'  # noqa
 
 
 class KeyMismatchError(Exception):
@@ -65,13 +65,14 @@ def new_rsa_key(args):
     if args.verbose:
         return M2Crypto.RSA.gen_key(args.bits, 0x10001)
     else:
-        def NoOp(): pass
+        def NoOp():
+            pass
         return M2Crypto.RSA.gen_key(args.bits, 0x10001, NoOp)
 
 
 def jwk2rsa(jwk):
-    # Converts a JWK exponent or modulus from base64 URL safe encoded big endian
-    # byte string to an OpenSSL MPINT
+    # Converts a JWK exponent or modulus from base64 URL safe encoded big
+    # endian byte string to an OpenSSL MPINT
     def conv(a):
         __ = jwt.base64url_decode(a.encode('ascii'))
         return struct.pack('>I', len(__) + 1) + "\x00" + __
@@ -126,8 +127,8 @@ def save_jwsplat(args, typ, value):
         try:
             filename = args.keyid + "." + typ
         except Exception, e:
-            raise ValueError("Couldn't save as JWK to \"%s\": %s" % (args.keyid,
-                                                                     e))
+            raise ValueError("Couldn't save as JWK to \"%s\": %s" %
+                                 (args.keyid, e))
     with open(filename, 'w') as f:
         f.write(value)
     print "Saved to %s" % filename

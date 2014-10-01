@@ -22,6 +22,7 @@ PROD_URL_REGEX = re.compile("^(https?|app):\/\/[-a-z\d_]+(\.[-a-z\d_]+)*(:\d+)?$
 #      typ, nbf, iss, iat, detail, verify, product(url, storedata),
 #      user(type, value)
 
+
 def valid_receipt(request):
     try:
         receipt = request.json_body
@@ -45,13 +46,17 @@ def valid_receipt(request):
     if receipt['iss'] not in request.registry.settings['trunion.permitted_issuers']:
         raise HTTPConflict("Bad issuer: \"%s\"" % receipt['iss'])
     if receipt['nbf'] < signing['iat']:
-        raise HTTPConflict("nbf(not before) of receipt < iat(issued at) of signing cert")
+        raise HTTPConflict("nbf(not before) of receipt < iat(issued at) of "
+                           "signing cert")
     if receipt['nbf'] > signing['exp']:
-        raise HTTPConflict("nbf(not before) of receipt > exp(expires at) of signing cert")
+        raise HTTPConflict("nbf(not before) of receipt > exp(expires at) of "
+                           "signing cert")
     if receipt['iat'] < signing['iat']:
-        raise HTTPConflict("iat(issued at) of receipt < iat(issued at) of signing cert")
+        raise HTTPConflict("iat(issued at) of receipt < iat(issued at) of "
+                           "signing cert")
     if receipt['iat'] > signing['exp']:
-        raise HTTPConflict("iat(issued at) of receipt > exp(expires at) of signing cert")
+        raise HTTPConflict("iat(issued at) of receipt > exp(expires at) of "
+                           "signing cert")
     if receipt['iat'] > now:
         raise HTTPConflict("iat(issued at) of receipt in the future")
 
@@ -87,7 +92,8 @@ def valid_product(obj):
         raise HTTPBadRequest("Invalid product struct: URL doesn't look like "
                              "http://, https:// or app://: \"%s\"" % obj['url'])
     if len(obj['storedata']) < 1:
-        raise HTTPBadRequest('Invalid product struct: storedata appears to be empty')
+        raise HTTPBadRequest('Invalid product struct: storedata appears to be '
+                             'empty')
     return True
 
 

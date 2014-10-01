@@ -17,7 +17,8 @@ import os
 import random
 import re
 
-CERTIFICATE_RE = re.compile(r"-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----", re.S)
+CERTIFICATE_RE = re.compile(r"-----BEGIN CERTIFICATE-----.?+"
+                            "-----END CERTIFICATE-----", re.S)
 
 # Lame hack to take advantage of a not well known OpenSSL flag.  This omits
 # the S/MIME capabilities when generating a PKCS#7 signature.
@@ -37,7 +38,7 @@ class KeyStore(object):
         self.smime = M2Crypto.SMIME.SMIME()
 
         # FIXME Verify that it's actually a paired set of keys
-        self.setKey(self.key_file)
+        self.set_key(self.key_file)
         self.load_cert(self.cert_file)
         self.load_chain(self.chain)
 
@@ -46,11 +47,11 @@ class KeyStore(object):
         self.poll_interval = interval + random.randint(0, int(interval * 0.25))
 
     def sign(self, data, hash_alg):
-        self.updateKey()
+        self.update_key()
         return self.key.get_rsa().sign(data, hash_alg)
 
     def sign_app(self, data):
-        self.updateKey()
+        self.update_key()
         # XPI signing is JAR signing which uses PKCS7 detached signatures
         pkcs7 = self.smime.sign(M2Crypto.BIO.MemoryBuffer(str(data)),
                                 M2Crypto.SMIME.PKCS7_DETACHED
@@ -73,7 +74,7 @@ class KeyStore(object):
     def decode_jwt(self, payload):
         return jwt.decode(payload, self)
 
-    def updateKey(self):
+    def update_key(self):
         now = int(time.time())
         oldkey = self.key
         oldcert = self.certificate
@@ -91,10 +92,10 @@ class KeyStore(object):
 
             if sbk.st_mtime > self.last_stat:
                 if sbc.st_mtime <= self.last_stat:
-                    logging.error("Key updated but not certificate!  Skipping.")
+                    logging.error("Key updated but not certificate! Skipping.")
                 else:
                     try:
-                        self.setKey(self.key_file)
+                        self.set_key(self.key_file)
                         try:
                             self.load_cert(self.cert_file)
                             self.load_chain(self.chain)
@@ -114,14 +115,14 @@ class KeyStore(object):
             # unhandled exception
             self.last_stat = now
 
-    def setKey(self, name):
+    def set_key(self, name):
         if self.engine:
             try:
                 M2Crypto.Engine.load_dynamic()
                 engine = M2Crypto.Engine.Engine(self.engine)
                 if not engine.set_default(M2Crypto.m2.ENGINE_METHOD_RSA):
-                    raise Exception("Could not inialize nCipher OpenSSL engine "
-                                    "properly. Make sure LD_LIBRARY_PATH "
+                    raise Exception("Could not inialize nCipher OpenSSL engine"
+                                    " properly. Make sure LD_LIBRARY_PATH "
                                     "contains /opt/nfast/toolkits/hwcrhk")
                 self.key = engine.load_private_key(name)
             except:  # I have no idea what might get raised
@@ -149,7 +150,9 @@ class KeyStore(object):
                 # This may raise an exception but that's ok
                 self.cert_data = json.loads(self.certificate)['jwk'][0]
         except:
-            logging.error("Unable to load certificate for key '%s': cannot find '%s.crt' file in working directory" % (name, name))
+            logging.error("Unable to load certificate for key '%s': cannot "
+                          "find '%s.crt' file in working directory"
+                          % (name, name))
             raise  # IOError("Unable to load certificate for key '%s'" % name)
 
     def load_chain(self, name):
@@ -161,7 +164,7 @@ class KeyStore(object):
                 certs = CERTIFICATE_RE.finditer(chain)
                 stack = M2Crypto.X509.X509_Stack()
                 # The signing certificate isn't used
-                #signing_cert = M2Crypto.X509.load_cert_string(certs.pop().group(0))
+                # signing_cert = M2Crypto.X509.load_cert_string(certs.pop().group(0))
                 self.smime.x509 = M2Crypto.X509.load_cert_string(certs.next().group(0))
                 for cert in certs:
                     _c = M2Crypto.X509.load_cert_string(cert.group(0))
