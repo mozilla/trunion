@@ -11,7 +11,7 @@ import os.path
 from cornice import Service
 import crypto
 from pyramid.httpexceptions import HTTPUnsupportedMediaType
-from validators import valid_app, valid_receipt
+from validators import valid_addon, valid_app, valid_receipt
 
 
 sign = Service(name='sign', path='/1.0/sign', description="Receipt signer")
@@ -44,6 +44,25 @@ def sign_app(request):
     if request.registry.settings['trunion.we_are_signing'] != 'apps':
         raise HTTPUnsupportedMediaType()
 
+    from pprint import pformat
+    print '\n', pformat(request.POST), '\n'
     fname = os.path.splitext(request.POST['file'].filename)[0]
     pkcs7 = crypto.sign_app(request.POST['file'].file.read())
+    return {fname + '.rsa': b64encode(pkcs7)}
+
+
+signaddon = Service(name='sign_addon', path='/1.0/sign_addon',
+                    description="Addon signer")
+
+
+@signaddon.post(validators=valid_addon)
+def sign_addon(request):
+    if request.registry.settings['trunion.we_are_signing'] != 'addons':
+        raise HTTPUnsupportedMediaType()
+
+    pkcs7 = crypto.sign_addon(request.POST['addon_id'],
+                              request.POST['file'].file.read())
+
+    fname = os.path.splitext(request.POST['file'].filename)[0]
+
     return {fname + '.rsa': b64encode(pkcs7)}

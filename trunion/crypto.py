@@ -17,7 +17,7 @@ import os
 import random
 import re
 
-CERTIFICATE_RE = re.compile(r"-----BEGIN CERTIFICATE-----.?+"
+CERTIFICATE_RE = re.compile(r"-----BEGIN CERTIFICATE-----.+"
                             "-----END CERTIFICATE-----", re.S)
 
 # Lame hack to take advantage of a not well known OpenSSL flag.  This omits
@@ -33,14 +33,18 @@ class KeyStore(object):
         self.chain = chain
         self.cert_data = None
         self.engine = engine
+        # I hate these hacks so much
+        self.ca_cert = None
+        self.factory = None
+        self.addon_ca = None
 
         # SMIME object for signing apps
         self.smime = M2Crypto.SMIME.SMIME()
 
         # FIXME Verify that it's actually a paired set of keys
         self.set_key(self.key_file)
-        self.load_cert(self.cert_file)
-        self.load_chain(self.chain)
+        self.load_jwt_cert(self.cert_file)
+        self.load_smime_cert_chain(self.chain)
 
         self.last_stat = time.time()
         # Some slight fuzzing of poll interval at atoll's request
@@ -51,12 +55,39 @@ class KeyStore(object):
         return self.key.get_rsa().sign(data, hash_alg)
 
     def sign_app(self, data):
+        # I have doubts that this should be called
         self.update_key()
-        # XPI signing is JAR signing which uses PKCS7 detached signatures
-        pkcs7 = self.smime.sign(M2Crypto.BIO.MemoryBuffer(str(data)),
-                                M2Crypto.SMIME.PKCS7_DETACHED
-                                | M2Crypto.SMIME.PKCS7_BINARY
-                                | M2Crypto.SMIME.PKCS7_NOSMIMECAP)
+        return self.xpi_sign(self.smime, data)
+
+    def sign_addon(self, identifier, data):
+        # New ephemeral for each request
+        e_key, e_req = self.factory.new(identifier)
+        e_cert = self.addon_ca.certify(e_req)
+
+        # Set up our SMIME object for signing
+        smime = M2Crypto.SMIME.SMIME()
+        smime.pkey = e_key
+        smime.x509 = e_cert
+
+        # Only one thing in the certificate stack: the ephemeral CA cert.
+        # But the PCKS7 routines expect an X509_Stack type
+        stack = M2Crypto.X509.X509_Stack()
+        stack.push(self.addon_ca.certificate)
+        smime.set_x509_stack(stack)
+
+        pkcs7 = self.xpi_sign(smime, data)
+        return pkcs7
+
+    def xpi_sign(self, smime, data):
+        # XPI signing is technically incompatible subset of JAR signing.  JAR
+        # signing uses PKCS7 detached signatures.
+        #
+        # XPI signature verification goes belly up if there is an SMIME
+        # capabilities so add the flag to prevent it being included
+        pkcs7 = smime.sign(M2Crypto.BIO.MemoryBuffer(str(data)),
+                           M2Crypto.SMIME.PKCS7_DETACHED
+                           | M2Crypto.SMIME.PKCS7_BINARY
+                           | M2Crypto.SMIME.PKCS7_NOSMIMECAP)
         pkcs7_buf = M2Crypto.BIO.MemoryBuffer()
         pkcs7.write_der(pkcs7_buf)
         return pkcs7_buf.read()
@@ -97,8 +128,8 @@ class KeyStore(object):
                     try:
                         self.set_key(self.key_file)
                         try:
-                            self.load_cert(self.cert_file)
-                            self.load_chain(self.chain)
+                            self.load_jwt_cert(self.cert_file)
+                            self.load_smime_cert_chain(self.chain)
                         except:
                             # Revert to the previous state
                             self.key = oldkey
@@ -138,7 +169,7 @@ class KeyStore(object):
         # We short circuit the key loading functions in the SMIME class
         self.smime.pkey = self.key
 
-    def load_cert(self, name):
+    def load_jwt_cert(self, name):
         # FIXME  Need to verify that the pubkey in the cert does match the
         # signing key by doing a quick signature check
         try:
@@ -155,7 +186,7 @@ class KeyStore(object):
                           % (name, name))
             raise  # IOError("Unable to load certificate for key '%s'" % name)
 
-    def load_chain(self, name):
+    def load_smime_cert_chain(self, name):
         if not name:
             return
         try:
@@ -163,8 +194,8 @@ class KeyStore(object):
                 chain = f.read()
                 certs = CERTIFICATE_RE.finditer(chain)
                 stack = M2Crypto.X509.X509_Stack()
-                # The signing certificate isn't used
-                # signing_cert = M2Crypto.X509.load_cert_string(certs.pop().group(0))
+                # The signing certificate should be the first in the stack.  It
+                # isn't used in the stack as it has its own place.
                 self.smime.x509 = M2Crypto.X509.load_cert_string(certs.next().group(0))
                 for cert in certs:
                     _c = M2Crypto.X509.load_cert_string(cert.group(0))
@@ -174,6 +205,9 @@ class KeyStore(object):
             logging.error("Unable to load SMIME certificates")
             raise
 
+    def load_ca_cert(self, fname):
+        self.ca_cert = M2Crypto.X509.load_cert(fname)
+
 
 KEYSTORE = None
 
@@ -182,6 +216,16 @@ def init(*args, **kwargs):
     global KEYSTORE
     if KEYSTORE is None:
         KEYSTORE = KeyStore(*args, **kwargs)
+
+
+def init_ca(addons, dnbase, extensions):
+    # So many fugly hacks
+    from trunion.ephemeral import EphemeralCA, EphemeralFactory
+    KEYSTORE.factory = EphemeralFactory(addons, dnbase)
+    KEYSTORE.ca_cert = addons['ca_cert_file']
+    KEYSTORE.load_ca_cert(KEYSTORE.ca_cert)
+    KEYSTORE.addon_ca = EphemeralCA(KEYSTORE.key, KEYSTORE.ca_cert, addons,
+                                    extensions)
 
 
 def sign(input_data):
@@ -202,3 +246,7 @@ def get_certificate():
 
 def sign_app(data):
     return KEYSTORE.sign_app(data)
+
+
+def sign_addon(identifier, data):
+    return KEYSTORE.sign_addon(identifier, data)

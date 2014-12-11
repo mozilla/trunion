@@ -99,5 +99,15 @@ def valid_product(obj):
 
 def valid_app(request):
     """
+    Not much validating to do, really.  So much validation is done by the
+    separate validation service that we rely pretty heavily on the client
+    end of this request doing its job.
+    """
+    return True
+
+
+def valid_addon(request):
+    """
+    Not much validating to do, really
     """
     return True

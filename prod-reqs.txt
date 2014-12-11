@@ -14,11 +14,27 @@ cornice==0.8
 coverage==3.5.3
 docutils==0.9.1
 gunicorn==0.15.0
+M2Crypto==0.20.2
+#
+# BIG HUGE WARNING
+#
+# I don't know how but mozsvc 0.8 is causing WEIRD behaviour in M2Crypto.  If
+# you see errors like this:
+#
+# TypeError: in method 'bio_new_file', argument 1 of type 'char const *'
+#
+# It's something in the middle.  I'm still not sure what.  0.3 works so we're
+# sticking with it for the time being for reasons of expediency.
+#
+# rtilder  Thu Dec 11 11:29:03 PST 2014
+#
+#mozsvc==0.8
 mozsvc==0.3
 pyramid==1.2.1
 pyramid_exclog==0.7
 repoze.lru==0.6
 simplejson==2.6.2
+signing_clients==0.1.6
 translationstring==1.1
 unittest2==0.5.1
 venusian==1.0a7
@@ -26,4 +42,8 @@ zope.component==4.0.0
 zope.deprecation==4.0.0
 zope.event==4.0.0
 zope.interface==4.0.1
+#
+# mozsvc has some wonky issues with testing dependencies
+#
+WSGIProxy
 -e git://github.com/rtilder/pyjwt.git@aa3be513795c1a623dfc61c6c0a688198ea5d303#egg=pyjwt
