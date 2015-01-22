@@ -83,7 +83,9 @@ class EphemeralFactory(object):
         # Set the request's DN
         subject = request.get_subject()
         for k, v in self.dnbase.iteritems():
-            setattr(subject, k, v)
+            # INI style parsers frequently convert key names to all lowercase
+            # and M2Crypto's X509_Name class doesn't like that.
+            setattr(subject, k.upper(), v)
         subject.CN = identifier
 
         # Sign the request

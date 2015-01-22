@@ -11,7 +11,9 @@ import unittest
 from pyramid import testing
 from mozsvc.config import load_into_settings
 from mozsvc.tests.support import TestCase
-from trunion.tests.base import StupidRequest
+from trunion.tests.base import (StupidRequest,
+                                response_to_pkcs7,
+                                get_signature_cert_subject)
 
 from signing_clients.apps import JarExtractor
 from trunion.views import sign_addon
@@ -93,7 +95,7 @@ SHA1-Digest: lys436ZGYKrHY6n57Iy/EyF5FuI=
 
     def gen(self, name='SMRT'):
         dnbase = dict(C='US', ST='Denial', L='Calvinville',
-                      O='Allizom, Cni.', OU='Pickle Processing')
+                      O='Allizom, Cni.', OU='Derivative Knuckles')
         settings = dict(keysize=512, lifetime=365)
         e = EphemeralFactory(settings, dnbase)
         return e.new(name)
@@ -101,7 +103,7 @@ SHA1-Digest: lys436ZGYKrHY6n57Iy/EyF5FuI=
     def test_00_ephemeral_factory(self):
         key, req = self.gen()
         self.assertEqual(req.get_subject().as_text(),
-                         "C=US, ST=Denial, OU=Pickle Processing, O=Allizom, "
+                         "C=US, ST=Denial, OU=Derivative Knuckles, O=Allizom, "
                          "Cni., L=Calvinville, CN=SMRT")
 
     def test_01_ephemeral_ca(self):
@@ -128,6 +130,11 @@ SHA1-Digest: lys436ZGYKrHY6n57Iy/EyF5FuI=
                     file=formfile('zigbert.sf', extracted))
         request = StupidRequest(path="/1.0/sign_addon", post=post)
         response = sign_addon(request)
+        signature = response_to_pkcs7(response['zigbert.rsa'])
+        self.assertEqual(get_signature_cert_subject(signature),
+                         "OU=Pickle Processing, C=US, L=Calvinville, "
+                         "O=Allizom, Cni., ST=Denial, "
+                         "CN=hot_pink_bougainvillea")
 
     def tearDown(self):
         testing.tearDown()
