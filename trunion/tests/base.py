@@ -5,6 +5,7 @@
 # ***** END LICENSE BLOCK *****
 
 import os
+from base64 import b64decode
 
 from pyramid import testing
 from mozsvc.config import load_into_settings
@@ -12,7 +13,6 @@ from mozsvc.tests.support import TestCase
 import trunion.crypto as crypto
 
 # Needed to inspect signatures
-from base64 import b64decode
 from M2Crypto.BIO import BIOError, MemoryBuffer
 from M2Crypto.SMIME import PKCS7
 from M2Crypto.X509 import X509_Stack

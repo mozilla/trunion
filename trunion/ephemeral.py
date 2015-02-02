@@ -44,7 +44,7 @@ class EphemeralCA(object):
         cert.set_serial_number(int(time.time() * 1000))
         self.set_validity_period(cert)
 
-	cert.set_subject(req.get_subject())
+        cert.set_subject(req.get_subject())
         cert.set_pubkey(req.get_pubkey())
 
         cert.set_issuer(self.certificate.get_subject())
