@@ -44,8 +44,6 @@ def sign_app(request):
     if request.registry.settings['trunion.we_are_signing'] != 'apps':
         raise HTTPUnsupportedMediaType()
 
-    from pprint import pformat
-    print '\n', pformat(request.POST), '\n'
     fname = os.path.splitext(request.POST['file'].filename)[0]
     pkcs7 = crypto.sign_app(request.POST['file'].file.read())
     return {fname + '.rsa': b64encode(pkcs7)}
