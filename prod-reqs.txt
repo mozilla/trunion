@@ -30,13 +30,14 @@ M2Crypto==0.20.2
 #
 #mozsvc==0.8
 mozsvc==0.3
+#
+WSGIProxy>=0.2.2
 pyramid==1.2.1
 pyramid_exclog==0.7
 repoze.lru==0.6
 simplejson==2.6.2
 signing_clients==0.1.6
 translationstring==1.1
-unittest2==0.5.1
 venusian==1.0a7
 zope.component==4.0.0
 zope.deprecation==4.0.0
@@ -45,5 +46,5 @@ zope.interface==4.0.1
 #
 # mozsvc has some wonky issues with testing dependencies
 #
-WSGIProxy
+unittest2==0.5.1
 -e git://github.com/rtilder/pyjwt.git@aa3be513795c1a623dfc61c6c0a688198ea5d303#egg=pyjwt
