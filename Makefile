@@ -1,7 +1,7 @@
 APPNAME = trunion
 DEPS =
-HERE = $(shell pwd)
-BIN = $(HERE)/bin
+VIRTUAL_ENV ?= $(shell pwd)
+BIN = $(VIRTUAL_ENV)/bin
 VIRTUALENV = virtualenv
 NOSE = $(BIN)/nosetests -s --with-xunit
 TESTS = $(APPNAME)/tests
