@@ -11,6 +11,9 @@ import time
 
 import crypto
 
+from signing_clients.apps import ParsingError, Signature
+
+
 # From https://github.com/mozilla/browserid/blob/dev/lib/sanitize.js
 EMAIL_REGEX = re.compile("^[-\w.!#$%&'*+/=?\^`{|}~]+@[-a-z\d_]+(\.[-a-z\d_]+)+$",
                          re.I)
@@ -108,6 +111,31 @@ def valid_app(request):
 
 def valid_addon(request):
     """
-    Not much validating to do, really
+    Since the addon_id parameter could possibly be anything we can't do much
+    to validate it.  At the moment a reasonable bounds check on length is
+    about all I'm certain is acceptable.
+
+    We can use the signing_clients signature parser to at least make sure the
+    signature is nominally correctly formatted.
     """
+    if 'addon_id' not in request.POST:
+        raise HTTPBadRequest('missing addon identifier')
+
+    if 'file' not in request.POST:
+        raise HTTPBadRequest('no payload to sign')
+
+    if len(request.POST['addon_id']) < 4:
+        raise HTTPBadRequest('addon_id is very short(<4 bytes): "%s"'
+                             % request.POST['addon_id'])
+
+    if len(request.POST['addon_id']) > 128:
+        raise HTTPBadRequest('addon_id is very long(>128 bytes): "%s"'
+                             % request.POST['addon_id'])
+
+    try:
+        s = Signature.parse(request.POST['file'].file.read())
+    except ParsingError, e:
+        raise HTTPBadRequest('Provided XPI signature file does not parse: '
+                             '"%s"' % e)
+
     return True

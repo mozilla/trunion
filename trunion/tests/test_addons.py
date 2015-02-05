@@ -4,21 +4,33 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 # ***** END LICENSE BLOCK *****
 
-from cStringIO import StringIO
 import os
 import time
 import unittest
-from pyramid import testing
+import uuid
+
+from cStringIO import StringIO
+
 from mozsvc.config import load_into_settings
 from mozsvc.tests.support import TestCase
+from pyramid import testing
+from pyramid.httpexceptions import HTTPBadRequest
+from signing_clients.apps import JarExtractor
+
+import trunion.crypto as crypto
+
+from trunion.ephemeral import EphemeralCA, EphemeralFactory
 from trunion.tests.base import (StupidRequest,
                                 response_to_pkcs7,
                                 get_signature_cert_subject)
-
-from signing_clients.apps import JarExtractor
+from trunion.validators import valid_addon
 from trunion.views import sign_addon
-import trunion.crypto as crypto
-from trunion.ephemeral import EphemeralCA, EphemeralFactory
+
+
+class FormFile(object):
+    def __init__(self, filename, signatures):
+        self.filename = filename
+        self.file = StringIO(str(signatures))
 
 
 class TrunionAddonsTest(unittest.TestCase):
@@ -114,20 +126,50 @@ SHA1-Digest: lys436ZGYKrHY6n57Iy/EyF5FuI=
         self.assertNotEqual(cert1.get_serial_number(),
                             cert2.get_serial_number())
 
-    def test_05_sign_addons(self):
+    def test_02_invalid_addon_id(self):
+        post = dict(file=FormFile('zigbert.sf', 'not reached'))
+        request = StupidRequest(path="/1.0/sign_addon", post=post)
+        self.assertRaises(HTTPBadRequest, valid_addon, request)
+
+        post = dict(addon_id='',
+                    file=FormFile('zigbert.sf', 'not reached'))
+        request = StupidRequest(path="/1.0/sign_addon", post=post)
+        self.assertRaises(HTTPBadRequest, valid_addon, request)
+        
+        post = dict(addon_id='0123456789' * 13,
+                    file=FormFile('zigbert.sf', 'not reached'))
+        request = StupidRequest(path="/1.0/sign_addon", post=post)
+        self.assertRaises(HTTPBadRequest, valid_addon, request)
+
+    def test_03_invalid_signature(self):
+        s  = 'Signature-Version: 1.0\n'
+        s += 'MD5-Digest-Manifest: 6XBjzKLVQxhZVDcAZGkgOA==\n' 
+        s += 'SHA1-Digest-Manifest: 0g0K9Zpsq1gS4a0zncFgSmhSE2w=\n'
+        bad = '\nyaya'
+
+        post = dict(addon_id='%s' % uuid.uuid4())
+        request = StupidRequest(path="/1.0/sign_addon", post=post)
+        self.assertRaises(HTTPBadRequest, valid_addon, request)
+
+        post = dict(addon_id='%s' % uuid.uuid4(),
+                    file=FormFile('zigbert.sf', 'not a real signature'))
+        request = StupidRequest(path="/1.0/sign_addon", post=post)
+        self.assertRaises(HTTPBadRequest, valid_addon, request)
+        
+        post = dict(addon_id='%s' % uuid.uuid4(),
+                    file=FormFile('zigbert.sf', s + bad))
+        request = StupidRequest(path="/1.0/sign_addon", post=post)
+        self.assertRaises(HTTPBadRequest, valid_addon, request)
+        
+    def test_04_sign_addons(self):
         """
         Bah!  This is currently horked because StupidRequest extends
         pyramid.testing.DummyRequest which is very much NOT a webob request
         alike object.
         """
-        class formfile(object):
-            def __init__(self, filename, signatures):
-                self.filename = filename
-                self.file = StringIO(str(signatures))
-
         extracted = self._extract(True)
         post = dict(addon_id='hot_pink_bougainvillea',
-                    file=formfile('zigbert.sf', extracted))
+                    file=FormFile('zigbert.sf', extracted))
         request = StupidRequest(path="/1.0/sign_addon", post=post)
         response = sign_addon(request)
         signature = response_to_pkcs7(response['zigbert.rsa'])
@@ -135,6 +177,7 @@ SHA1-Digest: lys436ZGYKrHY6n57Iy/EyF5FuI=
                          "OU=Pickle Processing, C=US, L=Calvinville, "
                          "O=Allizom, Cni., ST=Denial, "
                          "CN=hot_pink_bougainvillea")
+
 
     def tearDown(self):
         testing.tearDown()
