@@ -46,7 +46,7 @@ def update_info(ref='origin/master'):
 
 @task
 def deploy():
-    helpers.deploy(name='trunion',
+    helpers.deploy(name='trunion-{0}'.format(settings.APPNAME),
                    env=settings.ENV,
                    cluster=settings.CLUSTER,
                    domain=settings.DOMAIN,
