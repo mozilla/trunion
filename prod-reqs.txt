@@ -13,8 +13,6 @@ cef==0.5
 cornice==0.8
 coverage==3.5.3
 docutils==0.9.1
-gunicorn==0.15.0
-M2Crypto==0.20.2
 #
 # BIG HUGE WARNING
 #
