@@ -3,22 +3,22 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 # ***** END LICENSE BLOCK *****
-
-from pyramid.httpexceptions import HTTPBadRequest, HTTPConflict
-
+from datetime import datetime
+import logging
 import re
 import time
 
-import crypto
+from pyramid.httpexceptions import HTTPBadRequest, HTTPConflict
 
+import crypto
 from signing_clients.apps import ParsingError, Signature
 
 
 # From https://github.com/mozilla/browserid/blob/dev/lib/sanitize.js
-EMAIL_REGEX = re.compile("^[-\w.!#$%&'*+/=?\^`{|}~]+@[-a-z\d_]+(\.[-a-z\d_]+)+$",
-                         re.I)
-PROD_URL_REGEX = re.compile("^(https?|app):\/\/[-a-z\d_]+(\.[-a-z\d_]+)*(:\d+)?$",
-                            re.I)
+EMAIL_REGEX = re.compile(
+    "^[-\w.!#$%&'*+/=?\^`{|}~]+@[-a-z\d_]+(\.[-a-z\d_]+)+$", re.I)
+PROD_URL_REGEX = re.compile(
+    "^(https?|app):\/\/[-a-z\d_]+(\.[-a-z\d_]+)*(:\d+)?$", re.I)
 
 # TODO
 #    Don't permit other than the required fields to be safe:
@@ -26,13 +26,14 @@ PROD_URL_REGEX = re.compile("^(https?|app):\/\/[-a-z\d_]+(\.[-a-z\d_]+)*(:\d+)?$
 #      user(type, value)
 
 
-def valid_receipt(request):
+def valid_receipt(request, now=None):
     try:
         receipt = request.json_body
     except ValueError:
         raise HTTPBadRequest('Invalid JSON')
 
-    now = long(time.time())
+    if now is None:
+        now = long(time.time())
 
     for key in ('detail', 'verify', 'user', 'product', 'iss', 'iat', 'nbf'):
         if key not in receipt:
@@ -46,27 +47,65 @@ def valid_receipt(request):
     # Also, if we aren't going to revoke then the checks against signing['exp']
     # should definitely include a window
     signing = crypto.KEYSTORE.cert_data
-    if receipt['iss'] not in request.registry.settings['trunion.permitted_issuers']:
+    if (receipt['iss'] not in
+            request.registry.settings['trunion.permitted_issuers']):
         raise HTTPConflict("Bad issuer: \"%s\"" % receipt['iss'])
+    for receipt_key in ('iat', 'nbf'):
+        if not isinstance(receipt[receipt_key], (int, long, float)):
+            logging.warning(
+                'invalid receipt: non-numeric timestamp for {key}: "{val}"; '
+                'receipt: {receipt}'
+                .format(key=receipt_key, val=receipt[receipt_key],
+                        receipt=receipt))
+            raise HTTPConflict('non-numeric timestamp for {key}'
+                               .format(key=receipt_key))
     if receipt['nbf'] < signing['iat']:
+        logging.warning('invalid receipt: nbf {nbf} < iat {iat} of '
+                        'signing cert; receipt: {receipt}'
+                        .format(nbf=datetime.utcfromtimestamp(receipt['nbf']),
+                                iat=datetime.utcfromtimestamp(signing['iat']),
+                                receipt=receipt))
         raise HTTPConflict("nbf(not before) of receipt < iat(issued at) of "
                            "signing cert")
     if receipt['nbf'] > signing['exp']:
+        logging.warning('invalid receipt: nbf {nbf} > exp {exp} of '
+                        'signing cert; receipt: {receipt}'
+                        .format(nbf=datetime.utcfromtimestamp(receipt['nbf']),
+                                exp=datetime.utcfromtimestamp(signing['exp']),
+                                receipt=receipt))
         raise HTTPConflict("nbf(not before) of receipt > exp(expires at) of "
                            "signing cert")
     if receipt['iat'] < signing['iat']:
+        logging.warning('invalid receipt: receipt iat {r} < iat {c} of '
+                        'signing cert; receipt: {receipt}'
+                        .format(r=datetime.utcfromtimestamp(receipt['iat']),
+                                c=datetime.utcfromtimestamp(signing['iat']),
+                                receipt=receipt))
         raise HTTPConflict("iat(issued at) of receipt < iat(issued at) of "
                            "signing cert")
     if receipt['iat'] > signing['exp']:
+        logging.warning('invalid receipt: iat {iat} > exp {exp} of '
+                        'signing cert; receipt: {receipt}'
+                        .format(iat=datetime.utcfromtimestamp(receipt['iat']),
+                                exp=datetime.utcfromtimestamp(signing['exp']),
+                                receipt=receipt))
         raise HTTPConflict("iat(issued at) of receipt > exp(expires at) of "
                            "signing cert")
     if receipt['iat'] > now:
-        raise HTTPConflict("iat(issued at) of receipt in the future")
+        logging.warning('invalid receipt: iat {iat} > now {now}; '
+                        'receipt: {receipt}'
+                        .format(iat=datetime.utcfromtimestamp(receipt['iat']),
+                                now=datetime.utcfromtimestamp(now),
+                                receipt=receipt))
+        raise HTTPConflict("iat(issued at) of receipt is in the future")
 
     try:
         valid_user(receipt['user'])
         valid_product(receipt['product'])
-    except:
+    except Exception, exc:
+        logging.warning('invalid receipt: invalid user or product: '
+                        '{exc.__class__.__name__}: {exc}; receipt: {receipt}'
+                        .format(exc=exc, receipt=receipt))
         raise
 
 
@@ -92,8 +131,9 @@ def valid_product(obj):
     if 'storedata' not in obj:
         raise HTTPBadRequest('Invalid product struct: no storedata')
     if not PROD_URL_REGEX.match(obj['url']):
-        raise HTTPBadRequest("Invalid product struct: URL doesn't look like "
-                             "http://, https:// or app://: \"%s\"" % obj['url'])
+        raise HTTPBadRequest(
+            "Invalid product struct: URL doesn't look like "
+            "http://, https:// or app://: \"%s\"" % obj['url'])
     if len(obj['storedata']) < 1:
         raise HTTPBadRequest('Invalid product struct: storedata appears to be '
                              'empty')
@@ -133,7 +173,7 @@ def valid_addon(request):
                              % request.POST['addon_id'])
 
     try:
-        s = Signature.parse(request.POST['file'].file.read())
+        Signature.parse(request.POST['file'].file.read())
     except ParsingError, e:
         raise HTTPBadRequest('Provided XPI signature file does not parse: '
                              '"%s"' % e)

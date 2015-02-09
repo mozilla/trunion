@@ -53,6 +53,19 @@ class ValidateTest(TrunionTest):
                                           iat=self.signing['exp'] + 1))
         self.assertRaises(HTTPConflict, valid_receipt, request)
 
+    def test_cannot_be_issued_in_the_future(self):
+        request = StupidRequest(path=self.path,
+                                post=dict(self._template))
+        self.assertRaises(HTTPConflict, valid_receipt, request,
+                          now=0)
+
+    def test_timestamp_keys_must_be_numeric(self):
+        for receipt_key in ('iat', 'nbf'):
+            kw = {receipt_key: 'not-a-number'}
+            request = StupidRequest(path=self.path,
+                                    post=dict(self._template, **kw))
+            self.assertRaises(HTTPConflict, valid_receipt, request)
+
     def test_validate_user(self):
         request = StupidRequest(path=self.path,
                                 post=dict(self._template,
