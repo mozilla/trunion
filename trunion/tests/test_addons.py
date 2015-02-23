@@ -5,8 +5,6 @@
 # ***** END LICENSE BLOCK *****
 
 import os
-import time
-import unittest
 import uuid
 
 from cStringIO import StringIO
@@ -19,7 +17,7 @@ from signing_clients.apps import JarExtractor
 
 import trunion.crypto as crypto
 
-from trunion.ephemeral import EphemeralCA, EphemeralFactory
+from trunion.ephemeral import EphemeralFactory
 from trunion.tests.base import (StupidRequest,
                                 response_to_pkcs7,
                                 get_signature_cert_subject)
@@ -28,12 +26,19 @@ from trunion.views import sign_addon
 
 
 class FormFile(object):
+
     def __init__(self, filename, signatures):
         self.filename = filename
         self.file = StringIO(str(signatures))
 
+    def seek(self, whence):
+        return self.file.seek(whence)
 
-class TrunionAddonsTest(unittest.TestCase):
+    def tell(self):
+        return self.file.tell()
+
+
+class TrunionAddonsTest(TestCase):
 
     MANIFEST = """Manifest-Version: 1.0
 
@@ -161,7 +166,16 @@ SHA1-Digest: lys436ZGYKrHY6n57Iy/EyF5FuI=
         request = StupidRequest(path="/1.0/sign_addon", post=post)
         self.assertRaises(HTTPBadRequest, valid_addon, request)
         
-    def test_04_sign_addons(self):
+    def test_04_validator_reset_file_position(self):
+        # An ugly bug during release
+        extracted = self._extract(True)
+        post = dict(addon_id='hot_pink_bougainvillea',
+                    file=FormFile('zigbert.sf', extracted.signature))
+        request = StupidRequest(path="/1.0/sign_addon", post=post)
+        valid_addon(request)
+        self.assertEqual(request.POST['file'].file.tell(), 0)
+
+    def test_05_sign_addons(self):
         """
         Bah!  This is currently horked because StupidRequest extends
         pyramid.testing.DummyRequest which is very much NOT a webob request
@@ -169,15 +183,17 @@ SHA1-Digest: lys436ZGYKrHY6n57Iy/EyF5FuI=
         """
         extracted = self._extract(True)
         post = dict(addon_id='hot_pink_bougainvillea',
-                    file=FormFile('zigbert.sf', extracted))
+                    file=FormFile('zigbert.sf', extracted.signature))
         request = StupidRequest(path="/1.0/sign_addon", post=post)
+        # Call the validator to make sure we replicate the real call stack
+        # as much as possible.
+        valid_addon(request)
         response = sign_addon(request)
         signature = response_to_pkcs7(response['zigbert.rsa'])
         self.assertEqual(get_signature_cert_subject(signature),
                          "OU=Pickle Processing, C=US, L=Calvinville, "
                          "O=Allizom, Cni., ST=Denial, "
                          "CN=hot_pink_bougainvillea")
-
 
     def tearDown(self):
         testing.tearDown()

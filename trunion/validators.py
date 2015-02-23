@@ -174,6 +174,8 @@ def valid_addon(request):
 
     try:
         Signature.parse(request.POST['file'].file.read())
+        # Make certain to reset the file position
+        request.POST['file'].file.seek(0)
     except ParsingError, e:
         raise HTTPBadRequest('Provided XPI signature file does not parse: '
                              '"%s"' % e)
