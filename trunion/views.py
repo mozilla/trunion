@@ -14,6 +14,14 @@ from pyramid.httpexceptions import HTTPUnsupportedMediaType
 from validators import valid_addon, valid_app, valid_receipt
 
 
+status = Service(name='status', path='/status', description='Status')
+
+
+@status.get()
+def status(request):
+    return {'status': 'true'}
+
+
 sign = Service(name='sign', path='/1.0/sign', description="Receipt signer")
 
 
