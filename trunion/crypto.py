@@ -14,7 +14,7 @@ import M2Crypto
 import json
 import re
 
-CERTIFICATE_RE = re.compile(r"-----BEGIN CERTIFICATE-----.+"
+CERTIFICATE_RE = re.compile(r"-----BEGIN CERTIFICATE-----.+?"
                             "-----END CERTIFICATE-----", re.S)
 
 # Lame hack to take advantage of a not well known OpenSSL flag.  This omits
