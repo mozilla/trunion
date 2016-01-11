@@ -140,7 +140,7 @@ SHA1-Digest: lys436ZGYKrHY6n57Iy/EyF5FuI=
                     file=FormFile('zigbert.sf', 'not reached'))
         request = StupidRequest(path="/1.0/sign_addon", post=post)
         self.assertRaises(HTTPBadRequest, valid_addon, request)
-        
+
         post = dict(addon_id='0123456789' * 13,
                     file=FormFile('zigbert.sf', 'not reached'))
         request = StupidRequest(path="/1.0/sign_addon", post=post)
@@ -148,7 +148,7 @@ SHA1-Digest: lys436ZGYKrHY6n57Iy/EyF5FuI=
 
     def test_03_invalid_signature(self):
         s  = 'Signature-Version: 1.0\n'
-        s += 'MD5-Digest-Manifest: 6XBjzKLVQxhZVDcAZGkgOA==\n' 
+        s += 'MD5-Digest-Manifest: 6XBjzKLVQxhZVDcAZGkgOA==\n'
         s += 'SHA1-Digest-Manifest: 0g0K9Zpsq1gS4a0zncFgSmhSE2w=\n'
         bad = '\nyaya'
 
@@ -160,12 +160,12 @@ SHA1-Digest: lys436ZGYKrHY6n57Iy/EyF5FuI=
                     file=FormFile('zigbert.sf', 'not a real signature'))
         request = StupidRequest(path="/1.0/sign_addon", post=post)
         self.assertRaises(HTTPBadRequest, valid_addon, request)
-        
+
         post = dict(addon_id='%s' % uuid.uuid4(),
                     file=FormFile('zigbert.sf', s + bad))
         request = StupidRequest(path="/1.0/sign_addon", post=post)
         self.assertRaises(HTTPBadRequest, valid_addon, request)
-        
+
     def test_04_validator_reset_file_position(self):
         # An ugly bug during release
         extracted = self._extract(True)

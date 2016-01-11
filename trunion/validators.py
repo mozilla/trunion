@@ -164,12 +164,14 @@ def valid_addon(request):
     if 'file' not in request.POST:
         raise HTTPBadRequest('no payload to sign')
 
-    if len(request.POST['addon_id']) < 4:
-        raise HTTPBadRequest('addon_id is very short(<4 bytes): "%s"'
+    if len(request.POST['addon_id']) < 1:
+        raise HTTPBadRequest('addon_id is very short(<1 byte): "%s"'
                              % request.POST['addon_id'])
 
-    if len(request.POST['addon_id']) > 128:
-        raise HTTPBadRequest('addon_id is very long(>128 bytes): "%s"'
+    # 64 byte length limit is a function of the X509 spec's definition of the
+    # CNAME attribute.
+    if len(request.POST['addon_id']) > 64:
+        raise HTTPBadRequest('addon_id is very long(>64 bytes): "%s"'
                              % request.POST['addon_id'])
 
     try:
